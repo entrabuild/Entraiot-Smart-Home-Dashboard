@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  // Live production config — points at the real Firebase project so this
+  // dashboard works from any device/location, in sync with the ESP32
+  // firmware (see Entraiot_ESP32_IoT.ino / secrets.h). The ESP32 and this
+  // dashboard never talk to each other directly — both only talk to
+  // Firebase Realtime Database, at devices/{deviceId}.
+  //
+  // SETUP.md Part 1 walks through getting each firebaseConfig value from
+  // Firebase Console -> Project settings -> General -> Your apps -> Web app.
+  // deviceId must match FIREBASE_DEVICE_ID in the ESP32's secrets.h.
+  //
+  // No password is needed here: database.rules.json only requires an
+  // authenticated (even anonymous) session to read devices/*, and
+  // firebase-client.js signs in anonymously by default. Firebase Web API
+  // keys are not secret — see firebase-client.js's header comment.
+  //
+  // To develop locally against the Firebase Emulator Suite instead, swap
+  // useEmulator back to true and firebaseConfig.databaseURL back to
+  // "http://127.0.0.1:9000/?ns=entraiot-dev-default-rtdb".
+  window.__ENTRAIOT_CONFIG__ = {
+    firebaseConfig: {
+      apiKey: "AIzaSyDIewS_zEkQVQkrWeNFqklJgaUkDdUFFRA",
+      authDomain: "entraiot-dev.firebaseapp.com",
+      databaseURL: "https://entraiot-dev-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "entraiot-dev"
+    },
+    deviceId: "esp32_001",
+    useEmulator: false,
+    auth: null
+  };
+</script>
+<script type="module" src="./firebase-client.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #05070d; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.25); border-radius: 8px; }
+  @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.45); } 50% { box-shadow: 0 0 0 5px rgba(56,189,248,0); } }
+  @keyframes pulseGlowRed { 0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.5); } 50% { box-shadow: 0 0 0 6px rgba(248,113,113,0); } }
+  @keyframes floatY { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
+  @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+
+<canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:0.5;pointer-events:none;z-index:0"></canvas>
+<div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, rgba(56,189,248,0.08), transparent 45%), radial-gradient(circle at 85% 80%, rgba(56,189,248,0.06), transparent 50%), #05070d;z-index:0"></div>
+
+<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:#e2e8f0;font-family:'Inter',sans-serif">
+
+  <aside style="width:236px;flex:none;height:100%;background:rgba(8,12,22,0.65);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid rgba(56,189,248,0.14);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px;border-bottom:1px solid rgba(56,189,248,0.1);margin-bottom:18px">
+      <div style="width:36px;height:36px;flex:none;border-radius:10px;overflow:hidden;box-shadow:0 0 18px rgba(56,189,248,0.45)">
+        <img src="./assets/logo/entraiot-smart-home.png" alt="Entraiot Smart Home logo" style="width:100%;height:100%;object-fit:contain;display:block" />
+      </div>
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.04em;color:#f1f5f9">ENTRAIOT</div>
+        <div style="font-size:9.5px;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;margin-top:1px">Solutions</div>
+      </div>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <sc-for list="{{ sidebarItems }}" as="item" hint-placeholder-count="6">
+        <div onClick="{{ item.select }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:background 0.15s" style-hover="background:rgba(56,189,248,0.08)">
+          <div style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ item.dotColor }};box-shadow:{{ item.dotShadow }}"></div>
+          <span style="font-size:13.5px;font-weight:{{ item.weight }};color:{{ item.textColor }}">{{ item.label }}</span>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto;padding:14px 10px 4px;border-top:1px solid rgba(56,189,248,0.1)">
+      <div style="font-size:10px;color:#475569;letter-spacing:0.04em">FIRMWARE {{ firmware }}</div>
+      <div style="font-size:10px;color:#334155;margin-top:2px">© 2026 Entraiot Solutions</div>
+    </div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0">
+
+    <header style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(8,12,22,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(56,189,248,0.1)">
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#f1f5f9">{{ viewTitle }}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:1px">Entraiot Smart IoT Monitoring Dashboard</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:#94a3b8;text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid rgba(148,163,184,0.15)">
+          <div style="color:#e2e8f0;font-weight:600">{{ clockTime }}</div>
+          <div style="font-size:10px;color:#64748b">{{ clockDate }}</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+          <div style="width:7px;height:7px;border-radius:50%;background:{{ wifiColor }};animation:pulseGlow 2.2s infinite"></div>
+          <span style="font-size:11px;color:#cbd5e1">{{ wifiLabel }}</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+          <div style="width:7px;height:7px;border-radius:50%;background:{{ espColor }};animation:pulseGlow 2.2s infinite"></div>
+          <span style="font-size:11px;color:#cbd5e1">{{ espLabel }}</span>
+        </div>
+
+        <div style="position:relative">
+          <div onClick="{{ toggleNotif }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            <div style="width:14px;height:14px;border:1.6px solid #94a3b8;border-radius:4px 4px 8px 8px;border-top:none;position:relative"><div style="position:absolute;top:-5px;left:3.5px;width:5px;height:5px;border:1.6px solid #94a3b8;border-radius:50% 50% 0 0;border-bottom:none"></div></div>
+            <sc-if value="{{ notifCount }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:#f87171;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(248,113,113,0.6)">{{ notifCount }}</div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:44px;right:0;width:300px;background:rgba(10,15,26,0.92);backdrop-filter:blur(24px);border:1px solid rgba(56,189,248,0.18);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:10px;z-index:20;animation:fadeSlideIn 0.18s ease">
+              <div style="font-size:11.5px;font-weight:600;color:#94a3b8;padding:6px 8px 10px;text-transform:uppercase;letter-spacing:0.05em">Recent Notifications</div>
+              <sc-for list="{{ notifPreview }}" as="n" hint-placeholder-count="4">
+                <div style="display:flex;gap:9px;padding:8px;border-radius:9px" style-hover="background:rgba(255,255,255,0.04)">
+                  <div style="width:6px;height:6px;border-radius:50%;flex:none;margin-top:5px;background:{{ n.color }}"></div>
+                  <div>
+                    <div style="font-size:12px;color:#e2e8f0">{{ n.message }}</div>
+                    <div style="font-size:10px;color:#64748b;margin-top:2px">{{ n.time }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:9px;padding-left:6px">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#031018">AD</div>
+          <div style="line-height:1.25">
+            <div style="font-size:12px;font-weight:600;color:#e2e8f0">Admin</div>
+            <div style="font-size:10px;color:#64748b">System Operator</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main style="flex:1;overflow-y:auto;padding:26px 30px 50px">
+
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9">Live Sensor Overview</div>
+            <div style="font-size:11px;color:#64748b">Last updated {{ clockTime }}</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:22px">
+            <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
+              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);position:relative;overflow:hidden;border:1px solid {{ s.borderColor }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                  <span style="font-size:22px;animation:floatY 3.4s ease-in-out infinite">{{ s.icon }}</span>
+                  <div style="width:8px;height:8px;border-radius:50%;background:{{ s.statusColor }}"></div>
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:4px">{{ s.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:#f1f5f9;margin-bottom:10px">{{ s.valueText }}</div>
+                <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:100%;height:5px;border-radius:4px;background:rgba(148,163,184,0.15);overflow:hidden">
+                    <div style="height:100%;border-radius:4px;transition:width 0.6s ease;width:{{ s.percent }}%;background:{{ s.statusColor }}"></div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);border:1px solid {{ gasBorderColor }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:22px">💨</span>
+                <div style="width:8px;height:8px;border-radius:50%;background:{{ gasLevelColor }}"></div>
+              </div>
+              <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:8px">MQ-2 Gas Sensor</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Gas Level</span><span style="color:#f1f5f9;font-weight:600;color:{{ gasLevelColor }}">{{ gasLevel }} ppm</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Air Quality</span><span style="font-weight:600;color:{{ gasQualityColor }}">{{ gasQuality }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Smoke</span><span style="font-weight:600;color:{{ smokeColor }}">{{ smokeLabel }}</span></div>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);border:1px solid {{ wifiRSSIColor }}33">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:22px">📶</span>
+                <div style="width:8px;height:8px;border-radius:50%;background:{{ wifiRSSIColor }}"></div>
+              </div>
+              <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:4px">Wi-Fi Signal (RSSI)</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:#f1f5f9;margin-bottom:10px">{{ wifiRSSI }} dBm</div>
+              <div style="display:flex;gap:3px;align-items:flex-end;height:16px">
+                <sc-for list="{{ wifiBarsList }}" as="b" hint-placeholder-count="4">
+                  <div style="width:6px;border-radius:2px;height:{{ b.h }}%;background:{{ b.color }}"></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">Device Status — ESP32</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                <div style="width:9px;height:9px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
+                <span style="font-size:13px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
+                  <div style="padding:9px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
+                    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                    <div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9">Recent Alerts</div>
+                <span onClick="{{ goAlerts }}" style="font-size:11px;color:#38bdf8;cursor:pointer">View all</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ alertPreview }}" as="a" hint-placeholder-count="4">
+                  <div style="display:flex;gap:9px;align-items:flex-start">
+                    <div style="width:6px;height:6px;border-radius:50%;margin-top:5px;flex:none;background:{{ a.color }}"></div>
+                    <div>
+                      <div style="font-size:12px;color:#e2e8f0">{{ a.message }}</div>
+                      <div style="font-size:10px;color:#64748b;margin-top:2px">{{ a.time }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Live Monitoring</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
+            <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
+              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.55),rgba(15,23,42,0.65));border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border:1px solid {{ s.borderColor }};box-shadow:0 0 30px {{ s.glow }}">
+                <span style="font-size:26px">{{ s.icon }}</span>
+                <div style="font-size:12px;color:#94a3b8;font-weight:500">{{ s.label }}</div>
+                <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient({{ s.statusColor }} {{ s.percent }}%, rgba(255,255,255,0.06) 0)">
+                    <div style="width:82px;height:82px;border-radius:50%;background:#0b1120;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#f1f5f9">{{ s.valueText }}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ s.isBinary }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;box-shadow:inset 0 0 0 3px {{ s.statusColor }}">
+                    <div style="width:12px;height:12px;border-radius:50%;animation:pulseGlow 1.8s infinite;background:{{ s.statusColor }}"></div>
+                    <div style="font-size:12.5px;font-weight:600;color:#f1f5f9;padding:0 6px;text-align:center">{{ s.valueText }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAnalytics }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+            <div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9">Analytics — Real-Time Trends</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px">Rolling live window · updates every 3s</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ filterOptions }}" as="f" hint-placeholder-count="5">
+                <div onClick="{{ f.select }}" style="padding:7px 14px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid {{ f.borderColor }};background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div onClick="{{ exportPDF }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export PDF</div>
+              <div onClick="{{ exportCSV }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export CSV</div>
+              <div onClick="{{ exportPNG }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export PNG</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:22px">
+            <sc-for list="{{ summaryCards }}" as="c" hint-placeholder-count="9">
+              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.14);border-radius:14px;padding:16px;transition:transform 0.2s,box-shadow 0.2s" style-hover="transform:translateY(-3px);box-shadow:0 10px 30px rgba(56,189,248,0.15)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <span style="font-size:18px">{{ c.icon }}</span>
+                  <span style="font-size:11px;font-weight:700;color:{{ c.trendColor }}">{{ c.trendArrow }} {{ c.trendPct }}</span>
+                </div>
+                <div style="font-size:10.5px;color:#94a3b8;font-weight:500;margin-bottom:3px">{{ c.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:#f1f5f9;margin-bottom:8px">{{ c.value }}<span style="font-size:11px;color:#64748b;font-weight:500">{{ c.unit }}</span></div>
+                <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" style="display:block">
+                  <polyline points="{{ c.sparkline }}" fill="none" stroke="{{ c.trendColor }}" stroke-width="2"></polyline>
+                </svg>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:22px">
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;align-self:start">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Device Resource Usage</div>
+              <div style="display:flex;justify-content:space-around;gap:12px">
+                <sc-for list="{{ resourceGauges }}" as="g" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <div style="width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ g.color }} {{ g.percent }}%, rgba(255,255,255,0.06) 0)">
+                      <div style="width:66px;height:66px;border-radius:50%;background:#0b1120;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#f1f5f9">{{ g.value }}</div>
+                    </div>
+                    <div style="font-size:10.5px;color:#94a3b8;text-align:center">{{ g.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">Calculations</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+                <sc-for list="{{ calcPanels }}" as="p" hint-placeholder-count="6">
+                  <div style="padding:11px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
+                    <div style="font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:6px">{{ p.label }}</div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Now</span><span style="font-weight:700;color:#f1f5f9">{{ p.current }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Avg</span><span>{{ p.avg }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Min / Max</span><span>{{ p.min }} / {{ p.max }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#38bdf8;margin-top:4px;border-top:1px solid rgba(148,163,184,0.08);padding-top:4px"><span>{{ p.extraLabel }}</span><span style="font-weight:600">{{ p.extraValue }}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;align-self:start">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">AI Insights</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ insights }}" as="i" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ i.color }}"></div>
+                    <span style="font-size:12.5px;color:#e2e8f0">{{ i.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Alert System</div>
+          <div style="display:flex;gap:14px;margin-bottom:20px">
+            <div style="flex:1;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:14px;padding:16px">
+              <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">Critical</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#f87171;margin-top:4px">{{ criticalCount }}</div>
+            </div>
+            <div style="flex:1;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:14px;padding:16px">
+              <div style="font-size:11px;color:#fde68a;text-transform:uppercase;letter-spacing:0.05em">Warning</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fbbf24;margin-top:4px">{{ warningCount }}</div>
+            </div>
+            <div style="flex:1;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:16px">
+              <div style="font-size:11px;color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em">Info</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#38bdf8;margin-top:4px">{{ infoCount }}</div>
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.14);border-radius:16px;padding:8px">
+            <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="8">
+              <div style="display:flex;gap:14px;padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.08)">
+                <div style="width:3px;border-radius:2px;flex:none;background:{{ a.color }}"></div>
+                <div style="flex:1;display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font-size:13px;color:#f1f5f9;font-weight:500">{{ a.icon }} {{ a.message }}</div>
+                    <div style="font-size:10.5px;color:#64748b;margin-top:3px;text-transform:uppercase;letter-spacing:0.04em;color:{{ a.color }}">{{ a.level }}</div>
+                  </div>
+                  <div style="font-size:11.5px;color:#64748b;flex:none">{{ a.time }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isHealth }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Device Health — ESP32</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ cpuColor }} {{ cpu }}%, rgba(255,255,255,0.06) 0)">
+                <div style="width:104px;height:104px;border-radius:50%;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#f1f5f9">{{ cpu }}%</div>
+                  <div style="font-size:10px;color:#64748b;margin-top:2px">CPU USAGE</div>
+                </div>
+              </div>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ heapColor }} {{ heapPercent }}%, rgba(255,255,255,0.06) 0)">
+                <div style="width:104px;height:104px;border-radius:50%;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#f1f5f9">{{ heapKB }}KB</div>
+                  <div style="font-size:10px;color:#64748b;margin-top:2px">FREE HEAP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <div style="width:10px;height:10px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
+              <span style="font-size:14px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
+                <div style="padding:11px 14px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
+                  <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                  <div style="font-size:13.5px;color:#e2e8f0;font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:640px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Settings</div>
+          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:8px;margin-bottom:18px">
+            <sc-for list="{{ settingsToggles }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(148,163,184,0.08)">
+                <div>
+                  <div style="font-size:13.5px;color:#e2e8f0;font-weight:500">{{ t.label }}</div>
+                  <div style="font-size:11px;color:#64748b;margin-top:2px">{{ t.desc }}</div>
+                </div>
+                <div onClick="{{ t.toggle }}" style="width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;transition:background 0.2s;background:{{ t.trackColor }}">
+                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;position:absolute;top:3px;transition:left 0.2s;left:{{ t.knobPos }}px"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
+            <div style="font-size:13.5px;color:#e2e8f0;font-weight:500;margin-bottom:10px">Sensor Refresh Interval</div>
+            <input type="range" min="1" max="10" value="{{ refreshInterval }}" onChange="{{ setRefreshInterval }}" style="width:100%;accent-color:#38bdf8"></input>
+            <div style="font-size:11.5px;color:#64748b;margin-top:6px">Updating every {{ refreshInterval }} seconds</div>
+          </div>
+        </div>
+      </sc-if>
+
+    </main>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const BLUE = '#38bdf8', GREEN = '#34d399', RED = '#f87171', AMBER = '#fbbf24', SLATE = '#64748b';
+const rgba = (hex, a) => {
+  const map = { '#38bdf8':'56,189,248', '#34d399':'52,211,153', '#f87171':'248,113,113', '#fbbf24':'251,191,36', '#64748b':'100,116,139', '#a78bfa':'167,139,250', '#fb923c':'251,146,60' };
+  return `rgba(${map[hex] || '148,163,184'},${a})`;
+};
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+class Component extends DCLogic {
+  threeCanvasRef = React.createRef();
+  tickCount = 0;
+
+  state = {
+    activeView: 'dashboard',
+    now: new Date(),
+    uptimeSec: 0,
+    notifOpen: false,
+    notifRead: 0,
+    flame: 'safe', pir: 'no-motion', vibration: 'stable',
+    rain: 0, soil: 0, distance: 0, temperature: 0, humidity: 0,
+    gasLevel: 0, gasQuality: 'Good', smoke: false,
+    wifiRSSI: -90,
+    heapKB: 0, cpu: 0, battery: null,
+    deviceId: null, ip: '—', mac: '—', firmware: '—', controllerStatus: 'offline', lastSeenTs: 0,
+    settings: { push: true, sound: true, autoRefresh: true, compact: false },
+    refreshInterval: 3,
+    // History arrays start empty and are populated by:
+    //  1. a one-time seed from today's real hourly telemetry (subscribeFirebase), then
+    //  2. every live sensor sample thereafter (applySensorUpdate).
+    // No client-side random generation remains anywhere in this file.
+    history: { soil: [], rain: [], distance: [], temp: [], humidity: [], gas: [] },
+    filterRange: '24h',
+    displayed: { avgTemp: 0, avgHumidity: 0, avgSoil: 0, avgRain: 0, avgGas: 0, motionToday: 0, fireToday: 0, uptimePct: 100, healthScore: 100 },
+    // Populated live from devices/{deviceId}/alerts — never written to locally.
+    alerts: []
+  };
+
+  // How long status/lastSeen can go stale before we call the device
+  // "offline". Sensor/status syncs happen every CLOUD_SYNC_INTERVAL_MS
+  // (3-5s) on the firmware side, so 15s tolerates a couple of missed/slow
+  // syncs without flapping, while still reacting quickly to a real outage.
+  OFFLINE_THRESHOLD_MS = 15000;
+
+  componentDidMount() {
+    this.clockTimer = setInterval(() => this.tick(), 1000);
+    this.initThree();
+    this.loadAnalyticsModules();
+    this.subscribeFirebase();
+  }
+
+  // Dynamically loads the analytics calculation helpers module. Optional:
+  // the page still works with the built-in fallbacks below if this fails
+  // (e.g. offline).
+  async loadAnalyticsModules() {
+    try {
+      const dataLib = await import('./analyticsData.js');
+      this.dataLib = dataLib;
+    } catch (e) { /* module failed to load — built-in fallbacks are used instead */ }
+  }
+
+  // ---- Live Firebase wiring -------------------------------------------
+  // Everything below replaces the old Math.random() simulation. All sensor,
+  // controller (heartbeat/status), and alert state now comes from
+  // devices/{deviceId}/* in the real Firebase Realtime Database, via
+  // firebase-client.js (window.EntraIoT). No dashboard code writes
+  // sensor/status/alert data — only the ESP32 does.
+  async subscribeFirebase() {
+    const api = window.EntraIoT;
+    if (!api) { console.error('firebase-client.js did not load — check the <script type="module"> tag and window.__ENTRAIOT_CONFIG__'); return; }
+    await api.whenReady();
+
+    this._unsubSensors = api.onSensors((sensors) => this.applySensorUpdate(sensors));
+    this._unsubController = api.onController((deviceId, controller) => this.applyController(deviceId, controller));
+    this._unsubAlerts = api.onAlerts((alerts) => this.setState({ alerts }));
+
+    // Seed today's rolling history from real hourly telemetry rollups so
+    // charts have real data immediately, instead of starting empty.
+    const sensorKeys = ['soil', 'rain', 'distance', 'temp', 'humidity', 'gas'];
+    const telemetryKeys = { soil: 'soil', rain: 'rain', distance: 'distance', temp: 'temperature', humidity: 'humidity', gas: 'gas' };
+    const seeded = {};
+    for (const key of sensorKeys) {
+      try {
+        const avgSeries = await api.fetchTodayTelemetry(telemetryKeys[key]);
+        if (avgSeries.length) seeded[key] = avgSeries.slice(-120);
+      } catch (e) { /* telemetry not available yet — history stays empty until live samples arrive */ }
+    }
+    if (Object.keys(seeded).length) {
+      this.setState(st => ({ history: { ...st.history, ...seeded } }));
+    }
+
+    // Real 7D/30D ranges from telemetry (replaces synthetic generator).
+    this.loadTelemetryRanges();
+  }
+
+  async loadTelemetryRanges() {
+    const api = window.EntraIoT;
+    const telemetryKeys = { soil: 'soil', rain: 'rain', distance: 'distance', temp: 'temperature', humidity: 'humidity', gas: 'gas' };
+    const buildRange = async (days) => {
+      const out = {};
+      for (const [key, sensor] of Object.entries(telemetryKeys)) {
+        try {
+          const rows = await api.fetchTelemetryRange(sensor, days);
+          out[key] = rows.map(r => r.avg);
+        } catch (e) { out[key] = []; }
+      }
+      return out;
+    };
+    this.synthetic = { '7d': await buildRange(7), '30d': await buildRange(30) };
+    if (this.state.filterRange !== '24h' && this.state.filterRange !== 'today') this.forceUpdate();
+  }
+
+  // Maps devices/{deviceId}/sensors (written by the ESP32, bare scalar
+  // values per field — no {v,raw,ts} wrapper) onto the dashboard's display
+  // state. Field meanings match syncToCloud() in the ESP32 .ino.
+  applySensorUpdate(sensors) {
+    if (!sensors || !Object.keys(sensors).length) return;
+    const cur = this.state;
+    const num = (v, fallback) => (typeof v === 'number' ? v : fallback);
+
+    const flame = typeof sensors.fire === 'boolean' ? (sensors.fire ? 'fire' : 'safe') : cur.flame;
+    const pir = typeof sensors.motion === 'boolean' ? (sensors.motion ? 'motion' : 'no-motion') : cur.pir;
+    const vibration = typeof sensors.vibration === 'boolean' ? (sensors.vibration ? 'triggered' : 'stable') : cur.vibration;
+    const temperature = num(sensors.temperature, cur.temperature);
+    const humidity = num(sensors.humidity, cur.humidity);
+    const soil = num(sensors.soil, cur.soil);
+    const distance = num(sensors.distance, cur.distance);
+    const gasLevel = num(sensors.gas, cur.gasLevel);
+
+    // rain sensor is already a 0-100 intensity percent from the firmware
+    // (rawToGasCloudPct()-style normalization happens on-device now, not
+    // here) — just pass it through, clamped defensively.
+    const rain = typeof sensors.rain === 'number' ? clamp(Math.round(sensors.rain), 0, 100) : cur.rain;
+
+    // No dedicated "smoke" sensor exists in the current schema (the MQ-2 gas
+    // sensor is the same physical sensor used for both gas-leak and smoke
+    // detection). We derive a "smoke detected" flag from a stricter gas
+    // threshold rather than inventing a new backend field. If a dedicated
+    // smoke sensor is added later, read it directly instead.
+    const smoke = gasLevel > 750;
+    const gasQuality = gasLevel > 600 ? 'Poor' : gasLevel > 350 ? 'Moderate' : 'Good';
+
+    const push = (arr, v) => (arr && arr.length ? [...arr.slice(-119), Number(v.toFixed(1))] : [Number(v.toFixed(1))]);
+    const history = {
+      soil: push(cur.history.soil, soil), rain: push(cur.history.rain, rain),
+      distance: push(cur.history.distance, distance), temp: push(cur.history.temp, temperature),
+      humidity: push(cur.history.humidity, humidity), gas: push(cur.history.gas, gasLevel)
+    };
+
+    this.setState({ flame, pir, vibration, rain, soil, distance, temperature, humidity, gasLevel, gasQuality, smoke, history });
+  }
+
+  // Maps devices/{deviceId}'s info/status/heartbeat (written by the ESP32)
+  // onto device health / info fields. There is no stored "online" flag —
+  // controllerStatus is recomputed every second in tick() from lastSeenTs,
+  // so a device that stops sending heartbeats is shown offline even though
+  // no new Firebase event arrives to re-trigger this callback.
+  applyController(deviceId, controller) {
+    if (!controller) return;
+    const hb = controller.heartbeat || {};
+    const info = controller.info || {};
+    const status = controller.status || {};
+
+    if (typeof hb.uptimeS === 'number') {
+      this._uptimeBaseline = { serverUptimeS: hb.uptimeS, receivedAt: Date.now() };
+    }
+
+    // status/wifiRSSI + status/lastSeen are written on every sync (every
+    // 3-5s); heartbeat/* is only written periodically. Prefer the fresher
+    // status fields where both exist.
+    const rssi = typeof status.wifiRSSI === 'number' ? status.wifiRSSI : hb.rssi;
+    const lastSeenTs = typeof status.lastSeen === 'number' ? status.lastSeen : hb.ts;
+
+    this.setState({
+      deviceId,
+      wifiRSSI: typeof rssi === 'number' ? rssi : this.state.wifiRSSI,
+      heapKB: typeof hb.freeHeap === 'number' ? hb.freeHeap : this.state.heapKB,
+      ip: hb.ip || this.state.ip,
+      mac: hb.mac || this.state.mac,
+      firmware: hb.fw || info.fw || this.state.firmware,
+      lastSeenTs: typeof lastSeenTs === 'number' ? lastSeenTs : this.state.lastSeenTs
+    });
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.clockTimer);
+    if (this._raf) cancelAnimationFrame(this._raf);
+    window.removeEventListener('resize', this._resize);
+    if (this._unsubSensors) this._unsubSensors();
+    if (this._unsubController) this._unsubController();
+    if (this._unsubAlerts) this._unsubAlerts();
+  }
+
+  tick() {
+    this.tickCount++;
+    const patch = { now: new Date() };
+
+    // Online/offline is derived here, every second, from lastSeenTs — NOT
+    // from any field stored in Firebase. This is what makes the dashboard
+    // correctly show "offline" when the ESP32 goes silent (power loss,
+    // WiFi drop, crash): there's no new Firebase event to react to in that
+    // case, so this has to be evaluated on our own clock instead of only
+    // inside applyController().
+    patch.controllerStatus = (this.state.lastSeenTs && (Date.now() - this.state.lastSeenTs) < this.OFFLINE_THRESHOLD_MS)
+      ? 'online' : 'offline';
+
+    // Interpolate uptime smoothly between heartbeat writes instead of
+    // waiting for the next heartbeat to move the counter.
+    if (this._uptimeBaseline) {
+      const elapsed = Math.floor((Date.now() - this._uptimeBaseline.receivedAt) / 1000);
+      patch.uptimeSec = this._uptimeBaseline.serverUptimeS + elapsed;
+    }
+
+    if (this.tickCount % 3 === 0) {
+      // Smoothly animate the summary-card counters toward their real targets
+      // instead of snapping, for a "counting up/down" feel. Source data is
+      // now always real (history arrays fed by applySensorUpdate).
+      const d0 = this.state.displayed;
+      const lerp = (a, b, t) => Number((a + (b - a) * t).toFixed(1));
+      const s = this.state;
+      patch.displayed = {
+        avgTemp: lerp(d0.avgTemp, this.computeStats(s.history.temp).avg, 0.25),
+        avgHumidity: Math.round(lerp(d0.avgHumidity, this.computeStats(s.history.humidity).avg, 0.25)),
+        avgSoil: Math.round(lerp(d0.avgSoil, this.computeStats(s.history.soil).avg, 0.25)),
+        avgRain: Math.round(lerp(d0.avgRain, this.computeStats(s.history.rain).avg, 0.25)),
+        avgGas: Math.round(lerp(d0.avgGas, this.computeStats(s.history.gas).avg, 0.25)),
+        motionToday: this.countAlertsToday('motion'),
+        fireToday: this.countAlertsToday(['fire', 'smoke']),
+        uptimePct: s.controllerStatus === 'online' ? d0.uptimePct : Math.max(0, d0.uptimePct - 0.1),
+        healthScore: this.computeHealthScoreNow({ cpu: s.cpu, heapKB: s.heapKB, flame: s.flame, smoke: s.smoke, gasLevel: s.gasLevel, wifiRSSI: s.wifiRSSI })
+      };
+    }
+
+    this.setState(patch);
+  }
+
+  // ---- Analytics: calculation helpers (mirrors analyticsData.js so first
+  // render works before the dynamic import resolves) ----
+
+  computeStats(arr) {
+    if (this.dataLib) return this.dataLib.computeStats(arr);
+    if (!arr || !arr.length) return { current: 0, avg: 0, min: 0, max: 0 };
+    const current = arr[arr.length - 1];
+    const avg = Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2));
+    return { current, avg, min: Math.min(...arr), max: Math.max(...arr) };
+  }
+
+  trendOf(arr, window = 10) {
+    if (this.dataLib) return this.dataLib.trendOf(arr, window);
+    if (!arr || arr.length < window * 2) return { dir: 'flat', pct: 0 };
+    const recent = arr.slice(-window), prior = arr.slice(-window * 2, -window);
+    const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+    const r = avg(recent), p = avg(prior);
+    const diffPct = p !== 0 ? ((r - p) / Math.abs(p)) * 100 : 0;
+    if (diffPct > 2) return { dir: 'up', pct: Math.abs(diffPct) };
+    if (diffPct < -2) return { dir: 'down', pct: Math.abs(diffPct) };
+    return { dir: 'flat', pct: Math.abs(diffPct) };
+  }
+
+  sparkline(arr) {
+    if (this.dataLib) return this.dataLib.sparklinePoints(arr);
+    const slice = (arr || []).slice(-16);
+    if (!slice.length) return '';
+    const min = Math.min(...slice), max = Math.max(...slice);
+    const range = (max - min) || 1;
+    const stepX = 100 / (slice.length - 1 || 1);
+    return slice.map((v, i) => `${(i * stepX).toFixed(1)},${(22 - ((v - min) / range) * 20).toFixed(1)}`).join(' ');
+  }
+
+  bucketAlerts(types, hours) {
+    if (this.dataLib) return this.dataLib.bucketAlertsByHour(this.state.alerts, types, hours);
+    const arr = Array.isArray(types) ? types : [types];
+    const now = Date.now();
+    const buckets = new Array(hours).fill(0);
+    this.state.alerts.forEach(a => {
+      if (!arr.includes(a.type)) return;
+      const ageH = (now - a.t) / 3600000;
+      if (ageH >= 0 && ageH < hours) {
+        const idx = hours - 1 - Math.floor(ageH);
+        if (idx >= 0 && idx < hours) buckets[idx]++;
+      }
+    });
+    return buckets;
+  }
+
+  countAlertsToday(types) {
+    const arr = Array.isArray(types) ? types : [types];
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    return this.state.alerts.filter(a => arr.includes(a.type) && a.t >= startOfDay.getTime()).length;
+  }
+
+  computeHealthScoreNow({ cpu, heapKB, flame, smoke, gasLevel, wifiRSSI }) {
+    const heapPercent = Math.round((heapKB / 320) * 100);
+    if (this.dataLib) return this.dataLib.healthScore({ cpu, heapPercent, flame, smoke, gasLevel, wifiRSSI });
+    let score = 100;
+    if (cpu > 70) score -= 15; else if (cpu > 50) score -= 5;
+    if (heapPercent < 30) score -= 15; else if (heapPercent < 55) score -= 5;
+    if (flame === 'fire') score -= 20;
+    if (smoke) score -= 15;
+    if (gasLevel > 600) score -= 10;
+    if (wifiRSSI < -75) score -= 8;
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  sensorHealthCounts() {
+    const s = this.state;
+    const checks = [
+      s.flame === 'fire' ? 'critical' : 'healthy',
+      s.vibration === 'triggered' ? 'warning' : 'healthy',
+      s.gasLevel > 600 ? 'critical' : s.gasLevel > 350 ? 'warning' : 'healthy',
+      s.smoke ? 'critical' : 'healthy',
+      s.rain > 80 ? 'warning' : 'healthy',
+      s.soil < 20 ? 'critical' : s.soil < 40 ? 'warning' : 'healthy',
+      s.distance < 15 ? 'warning' : 'healthy',
+      (s.temperature > 32 || s.temperature < 10) ? 'warning' : 'healthy',
+      (s.humidity > 85 || s.humidity < 25) ? 'warning' : 'healthy',
+      s.wifiRSSI < -75 ? 'warning' : 'healthy'
+    ];
+    return { healthy: checks.filter(c => c === 'healthy').length, warning: checks.filter(c => c === 'warning').length, critical: checks.filter(c => c === 'critical').length };
+  }
+
+  getActiveSeries() {
+    const range = this.state.filterRange;
+    if (range === '7d' && this.synthetic) return this.synthetic['7d'];
+    if ((range === '30d' || range === 'custom') && this.synthetic) return this.synthetic['30d'];
+    return this.state.history;
+  }
+
+  setFilterRange(range) {
+    this.setState({ filterRange: range });
+  }
+
+  exportCSV() {
+    const h = this.state.history;
+    let csv = 'index,soil_pct,rain_pct,distance_cm,temperature_c,humidity_pct,gas_ppm\n';
+    for (let i = 0; i < h.soil.length; i++) {
+      csv += `${i},${h.soil[i]},${h.rain[i]},${h.distance[i]},${h.temp[i]},${h.humidity[i]},${h.gas[i]}\n`;
+    }
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'entraiot-analytics.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  exportPNG() {
+    const c = this.chartManager && this.chartManager.get('soil');
+    if (!c) return;
+    const a = document.createElement('a');
+    a.href = c.toBase64Image(); a.download = 'soil-moisture-chart.png'; a.click();
+  }
+
+  exportPDF() {
+    window.print();
+  }
+
+  initThree() {
+    const canvas = this.threeCanvasRef.current;
+    if (!canvas || !window.THREE) return;
+    const THREE = window.THREE;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 42;
+
+    const count = 160;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count * 3; i++) positions[i] = (Math.random() - 0.5) * 110;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.55, transparent: true, opacity: 0.55 });
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    const grid = new THREE.GridHelper(140, 22, 0x1e3a5f, 0x0f1c2e);
+    grid.position.y = -22;
+    scene.add(grid);
+
+    const resize = () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    this._resize = resize;
+
+    const animate = () => {
+      points.rotation.y += 0.0007;
+      points.rotation.x += 0.0002;
+      grid.rotation.y += 0.0009;
+      renderer.render(scene, camera);
+      this._raf = requestAnimationFrame(animate);
+    };
+    animate();
+  }
+
+  formatUptime(sec) {
+    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+    return `${d}d ${h}h ${m}m`;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const view = s.activeView;
+    const sidebarDefs = [
+      { id: 'dashboard', label: 'Dashboard' }, { id: 'live', label: 'Live Monitoring' },
+      { id: 'analytics', label: 'Analytics' }, { id: 'alerts', label: 'Alerts' },
+      { id: 'health', label: 'Device Health' }, { id: 'settings', label: 'Settings' }
+    ];
+    const sidebarItems = sidebarDefs.map(it => {
+      const active = it.id === view;
+      return { ...it, select: () => this.setState({ activeView: it.id }), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
+    });
+
+    const flameColor = s.flame === 'fire' ? RED : GREEN;
+    const pirColor = s.pir === 'motion' ? BLUE : SLATE;
+    const vibColor = s.vibration === 'triggered' ? AMBER : GREEN;
+    const rainColor = s.rain > 80 ? AMBER : BLUE;
+    const soilColor = s.soil < 20 ? RED : s.soil < 40 ? AMBER : GREEN;
+    const distColor = s.distance < 15 ? RED : BLUE;
+    const tempColor = (s.temperature > 32 || s.temperature < 10) ? AMBER : BLUE;
+    const humColor = (s.humidity > 85 || s.humidity < 25) ? AMBER : BLUE;
+
+    const card = (id, icon, label, color, valueText, isGauge, percent) => ({
+      id, icon, label, statusColor: color, borderColor: rgba(color, 0.35), glow: rgba(color, 0.25),
+      valueText, isGauge, isBinary: !isGauge, percent: percent ?? 0
+    });
+
+    const sensorCards = [
+      card('flame', '🔥', 'Flame Sensor', flameColor, s.flame === 'fire' ? 'Fire Detected' : 'Safe', false),
+      card('pir', '🚶', 'PIR Motion', pirColor, s.pir === 'motion' ? 'Motion' : 'No Motion', false),
+      card('vibration', '📳', 'Vibration Sensor', vibColor, s.vibration === 'triggered' ? 'Triggered' : 'Stable', false),
+      card('rain', '🌧', 'Rain Sensor', rainColor, `${Math.round(s.rain)}%`, true, Math.round(s.rain)),
+      card('soil', '🌱', 'Soil Moisture', soilColor, `${Math.round(s.soil)}%`, true, Math.round(s.soil)),
+      card('distance', '📏', 'Ultrasonic Distance', distColor, `${Math.round(s.distance)} cm`, false),
+      card('temperature', '🌡', 'Temperature', tempColor, `${s.temperature.toFixed(1)}°C`, false),
+      card('humidity', '💧', 'Humidity', humColor, `${Math.round(s.humidity)}%`, true, Math.round(s.humidity))
+    ];
+
+    const gasLevelColor = s.gasLevel > 600 ? RED : s.gasLevel > 350 ? AMBER : GREEN;
+    const gasQualityColor = s.gasQuality === 'Poor' ? RED : s.gasQuality === 'Moderate' ? AMBER : GREEN;
+    const smokeColor = s.smoke ? RED : GREEN;
+
+    const wifiRSSIColor = s.wifiRSSI > -60 ? GREEN : s.wifiRSSI > -75 ? AMBER : RED;
+    const barCount = s.wifiRSSI > -55 ? 4 : s.wifiRSSI > -65 ? 3 : s.wifiRSSI > -78 ? 2 : 1;
+    const wifiBarsList = [1, 2, 3, 4].map(i => ({ h: 25 * i, color: i <= barCount ? wifiRSSIColor : 'rgba(148,163,184,0.15)' }));
+
+    const heapPercent = Math.round((s.heapKB / 320) * 100);
+    const heapColor = heapPercent < 30 ? RED : heapPercent < 55 ? AMBER : GREEN;
+    const cpuColor = s.cpu > 70 ? RED : s.cpu > 50 ? AMBER : BLUE;
+
+    const deviceFields = [
+      { label: 'IP Address', value: s.ip }, { label: 'MAC Address', value: s.mac },
+      { label: 'Firmware Version', value: s.firmware }, { label: 'Uptime', value: this.formatUptime(s.uptimeSec) },
+      { label: 'Free Heap Memory', value: `${s.heapKB} KB` }, { label: 'CPU Usage', value: `${s.cpu}%` },
+      { label: 'Wi-Fi RSSI', value: `${s.wifiRSSI} dBm` },
+      { label: 'Last Seen', value: s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : 'never' },
+      ...(s.battery !== null ? [{ label: 'Battery', value: `${s.battery}%` }] : [])
+    ];
+
+    const alerts = s.alerts.map(a => ({ ...a, time: this.timeAgo(a.t) }));
+    const criticalCount = alerts.filter(a => a.level === 'CRITICAL').length;
+    const warningCount = alerts.filter(a => a.level === 'WARNING').length;
+    const infoCount = alerts.filter(a => a.level === 'INFO').length;
+
+    const settingsDefs = [
+      { key: 'push', label: 'Push Notifications', desc: 'Receive alerts for critical sensor events' },
+      { key: 'sound', label: 'Sound Alerts', desc: 'Play a tone when a new alert fires' },
+      { key: 'autoRefresh', label: 'Auto-Refresh Data', desc: 'Continuously poll sensors in the background' },
+      { key: 'compact', label: 'Compact Card Layout', desc: 'Reduce padding on sensor cards' }
+    ];
+    const settingsToggles = settingsDefs.map(d => {
+      const on = s.settings[d.key];
+      return { ...d, trackColor: on ? rgba(BLUE, 0.55) : 'rgba(148,163,184,0.18)', knobPos: on ? 23 : 3, toggle: () => this.setState(st => ({ settings: { ...st.settings, [d.key]: !st.settings[d.key] } })) };
+    });
+
+    const viewTitles = { dashboard: 'Dashboard Overview', live: 'Live Monitoring', analytics: 'Analytics', alerts: 'Alert System', health: 'Device Health', settings: 'Settings' };
+
+    const notifCount = Math.max(0, s.alerts.length - s.notifRead);
+
+    // ---- Analytics module: filters, summary cards, calculations, insights ----
+
+    const filterDefs = [
+      { id: 'today', label: 'Today' }, { id: '24h', label: '24 Hours' }, { id: '7d', label: '7 Days' },
+      { id: '30d', label: '30 Days' }, { id: 'custom', label: 'Custom Range' }
+    ];
+    const filterOptions = filterDefs.map(f => {
+      const active = f.id === s.filterRange;
+      return { ...f, select: () => this.setFilterRange(f.id), bg: active ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.03)', borderColor: active ? 'rgba(56,189,248,0.5)' : 'rgba(148,163,184,0.15)', color: active ? '#7dd3fc' : '#94a3b8' };
+    });
+
+    const tTemp = this.trendOf(s.history.temp), tHum = this.trendOf(s.history.humidity), tSoil = this.trendOf(s.history.soil), tRain = this.trendOf(s.history.rain), tGas = this.trendOf(s.history.gas);
+    const arrow = d => d === 'up' ? '↑' : d === 'down' ? '↓' : '→';
+    const summaryDefs = [
+      { id: 'avgTemp', icon: '🌡', label: 'Avg Temperature (Live)', value: s.displayed.avgTemp.toFixed(1), unit: '°C', arr: s.history.temp, trend: tTemp, goodDir: 'flat' },
+      { id: 'avgHumidity', icon: '💧', label: 'Average Humidity', value: String(s.displayed.avgHumidity), unit: '%', arr: s.history.humidity, trend: tHum, goodDir: 'flat' },
+      { id: 'avgSoil', icon: '🌱', label: 'Average Soil Moisture', value: String(s.displayed.avgSoil), unit: '%', arr: s.history.soil, trend: tSoil, goodDir: 'up' },
+      { id: 'avgRain', icon: '🌧', label: 'Average Rain Intensity', value: String(s.displayed.avgRain), unit: '%', arr: s.history.rain, trend: tRain, goodDir: 'down' },
+      { id: 'avgGas', icon: '💨', label: 'Average Gas Level', value: String(s.displayed.avgGas), unit: 'ppm', arr: s.history.gas, trend: tGas, goodDir: 'down' },
+      { id: 'motion', icon: '🚶', label: 'Motion Events Today', value: String(s.displayed.motionToday), unit: '', arr: this.bucketAlerts('motion', 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'fire', icon: '🔥', label: 'Fire Alerts Today', value: String(s.displayed.fireToday), unit: '', arr: this.bucketAlerts(['fire', 'smoke'], 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'uptime', icon: '', label: 'Device Uptime', value: s.displayed.uptimePct.toFixed(1), unit: '%', arr: [s.displayed.uptimePct, s.displayed.uptimePct], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'health', icon: '', label: 'System Health Score', value: String(s.displayed.healthScore), unit: '/100', arr: [s.displayed.healthScore, s.displayed.healthScore], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' }
+    ];
+    const summaryCards = summaryDefs.map(d => {
+      let trendColor = SLATE;
+      if (d.trend.dir !== 'flat') {
+        if (d.goodDir === 'flat') trendColor = AMBER;
+        else trendColor = d.trend.dir === d.goodDir ? GREEN : AMBER;
+      }
+      return { id: d.id, icon: d.icon, label: d.label, value: d.value, unit: d.unit, trendArrow: arrow(d.trend.dir), trendPct: d.trend.pct ? `${d.trend.pct.toFixed(1)}%` : '—', trendColor, sparkline: this.sparkline(d.arr) };
+    });
+
+    const statTemp = this.computeStats(s.history.temp), statHum = this.computeStats(s.history.humidity), statGas = this.computeStats(s.history.gas);
+    const statSoil = this.computeStats(s.history.soil), statRain = this.computeStats(s.history.rain), statDist = this.computeStats(s.history.distance);
+    const aqi = statGas.avg < 200 ? 'Good' : statGas.avg < 400 ? 'Moderate' : statGas.avg < 600 ? 'Poor' : 'Hazardous';
+    const dryness = Math.round(100 - statSoil.current);
+    const calcPanels = [
+      { label: 'Temperature', unit: '°C', current: statTemp.current.toFixed(1), avg: statTemp.avg.toFixed(1), min: statTemp.min.toFixed(1), max: statTemp.max.toFixed(1), extraLabel: 'Range', extraValue: `${(statTemp.max - statTemp.min).toFixed(1)}°C` },
+      { label: 'Humidity', unit: '%', current: Math.round(statHum.current), avg: Math.round(statHum.avg), min: Math.round(statHum.min), max: Math.round(statHum.max), extraLabel: 'Peak', extraValue: `${Math.round(statHum.max)}%` },
+      { label: 'Gas Level', unit: 'ppm', current: Math.round(statGas.current), avg: Math.round(statGas.avg), min: Math.round(statGas.min), max: Math.round(statGas.max), extraLabel: 'Air Quality', extraValue: aqi },
+      { label: 'Soil Moisture', unit: '%', current: Math.round(statSoil.current), avg: Math.round(statSoil.avg), min: Math.round(statSoil.min), max: Math.round(statSoil.max), extraLabel: 'Dryness', extraValue: `${dryness}%` },
+      { label: 'Rain Intensity', unit: '%', current: Math.round(statRain.current), avg: Math.round(statRain.avg), min: Math.round(statRain.min), max: Math.round(statRain.max), extraLabel: 'Daily Avg', extraValue: `${Math.round(statRain.avg)}%` },
+      { label: 'Distance', unit: 'cm', current: Math.round(statDist.current), avg: Math.round(statDist.avg), min: Math.round(statDist.min), max: Math.round(statDist.max), extraLabel: 'Range', extraValue: `${Math.round(statDist.max - statDist.min)}cm` }
+    ];
+
+    const insights = [
+      { color: tSoil.dir === 'down' ? AMBER : GREEN, text: tSoil.dir === 'down' ? 'Soil moisture is decreasing' : tSoil.dir === 'up' ? 'Soil moisture is recovering' : 'Soil moisture is stable' },
+      { color: tRain.dir === 'up' ? AMBER : BLUE, text: tRain.dir === 'up' ? 'Rain intensity increasing' : tRain.dir === 'down' ? 'Rain intensity decreasing' : 'Rain intensity steady' },
+      { color: tTemp.dir === 'flat' ? GREEN : AMBER, text: tTemp.dir === 'flat' ? 'Temperature stable' : `Temperature trending ${tTemp.dir}` },
+      { color: statGas.avg > 400 ? AMBER : GREEN, text: statGas.avg > 400 ? 'Gas level elevated — monitor closely' : 'Gas level normal' },
+      { color: BLUE, text: `Motion detected ${s.displayed.motionToday} times today` },
+      { color: s.displayed.healthScore > 85 ? GREEN : s.displayed.healthScore > 60 ? AMBER : RED, text: `Device health ${s.displayed.healthScore > 85 ? 'excellent' : s.displayed.healthScore > 60 ? 'fair' : 'degraded'} (${s.displayed.healthScore}/100)` }
+    ];
+
+    const wifiQualityPct = Math.round(clamp(((s.wifiRSSI + 90) / 55) * 100, 0, 100));
+    const resourceGauges = [
+      { label: 'CPU Usage', value: `${s.cpu}%`, percent: s.cpu, color: cpuColor },
+      { label: 'Heap Memory', value: `${heapPercent}%`, percent: heapPercent, color: heapColor },
+      { label: 'Wi-Fi Signal', value: `${wifiQualityPct}%`, percent: wifiQualityPct, color: wifiRSSIColor }
+    ];
+
+    return {
+      sidebarItems,
+      viewTitle: viewTitles[view],
+      isDashboard: view === 'dashboard', isLive: view === 'live', isAnalytics: view === 'analytics',
+      isAlerts: view === 'alerts', isHealth: view === 'health', isSettings: view === 'settings',
+      firmware: s.firmware,
+      clockTime: s.now.toLocaleTimeString('en-US', { hour12: false }),
+      clockDate: s.now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      wifiColor: s.controllerStatus === 'online' ? GREEN : RED, wifiLabel: s.controllerStatus === 'online' ? 'Wi-Fi Connected' : 'Wi-Fi Unreachable',
+      espColor: s.controllerStatus === 'online' ? GREEN : RED, espLabel: s.controllerStatus === 'online' ? 'ESP32 Connected' : 'ESP32 Offline',
+      notifCount, notifOpen: s.notifOpen,
+      toggleNotif: () => this.setState(st => ({ notifOpen: !st.notifOpen, notifRead: st.alerts.length })),
+      notifPreview: alerts.slice(0, 4),
+      threeCanvasRef: this.threeCanvasRef,
+      sensorCards,
+      gasBorderColor: rgba(gasLevelColor, 0.35), gasLevelColor, gasLevel: s.gasLevel, gasQuality: s.gasQuality, gasQualityColor, smokeColor, smokeLabel: s.smoke ? 'Detected' : 'Clear',
+      wifiRSSIColor, wifiRSSI: s.wifiRSSI, wifiBarsList,
+      deviceOnlineColor: s.controllerStatus === 'online' ? GREEN : RED, deviceOnlineLabel: s.controllerStatus === 'online' ? 'ESP32 Online' : `ESP32 Offline (last seen ${s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : 'never'})`, deviceFields,
+      goAlerts: () => this.setState({ activeView: 'alerts' }),
+      alertPreview: alerts.slice(0, 4),
+      alerts, criticalCount, warningCount, infoCount,
+      cpu: s.cpu, cpuColor, heapKB: s.heapKB, heapPercent, heapColor,
+      settingsToggles, refreshInterval: s.refreshInterval,
+      setRefreshInterval: (e) => this.setState({ refreshInterval: Number(e.target.value) }),
+      filterOptions, summaryCards, calcPanels, insights, resourceGauges,
+      exportCSV: () => this.exportCSV(), exportPNG: () => this.exportPNG(), exportPDF: () => this.exportPDF()
+    };
+  }
+
+  timeAgo(t) {
+    const sec = Math.floor((Date.now() - t) / 1000);
+    if (sec < 60) return `${sec}s ago`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+    return `${Math.floor(sec / 3600)}h ago`;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+
+secrets.h
+serviceAccountKey.json
+*serviceAccount*.json
+
+node_modules/
+.firebase/
+firebase-debug.log
