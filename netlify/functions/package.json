@@ -1,0 +1,10 @@
+{
+  "name": "entraiot-netlify-functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Replaces the old Firebase Cloud Functions (Blaze-only) with Netlify Scheduled Functions (free plan, no card required). See _firebaseAdmin.mjs for how credentials are loaded from Netlify environment variables, and SETUP.md Part 4 for how to set them.",
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^13.6.0"
+  }
+}

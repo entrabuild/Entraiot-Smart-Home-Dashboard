@@ -1,0 +1,23 @@
+# Netlify site configuration for the flat repo layout (index.html, etc. at
+# repo root — matches github.com/entrabuild/Entraiot-Smart-Home-Dashboard).
+#
+# The dashboard itself works with zero config (Netlify auto-detects static
+# sites). This file only adds the two OPTIONAL scheduled functions described
+# in SETUP.md Part 4 — delete this file entirely if you don't want them.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Core sensor data flow (ESP32 -> Firebase -> Dashboard) needs ZERO
+# scheduled functions — the ESP32 writes straight to Firebase and the
+# dashboard reads it live. The two functions below are OPTIONAL extras:
+# one records durable "device offline" history, the other bounds the size
+# of the alerts log. Both run on Netlify's free plan, no credit card
+# required. Netlify scheduled functions always run on UTC time.
+[functions."check-offline-devices"]
+  schedule = "*/5 * * * *"
+
+# 3:00 AM IST == 21:30 UTC (IST is UTC+5:30, no daylight saving).
+[functions."cleanup-alerts"]
+  schedule = "30 21 * * *"
