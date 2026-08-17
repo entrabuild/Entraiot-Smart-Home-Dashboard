@@ -12,20 +12,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-  // Edit these values to point at your real Firebase project + home.
-  // Defaults below target the local Firebase Emulator Suite (matches
-  // backend/scripts/seed.js) so the dashboard works out of the box for
-  // local development. See firebase-client.js for full field docs.
+  // Live production config — points at the real Firebase project so this
+  // dashboard works from any device/location, in sync with the ESP32
+  // firmware (see Entraiot_ESP32_IoT.ino / secrets.h). The ESP32 and this
+  // dashboard never talk to each other directly — both only talk to
+  // Firebase Realtime Database, at devices/{deviceId}.
+  //
+  // SETUP.md Part 1 walks through getting each firebaseConfig value from
+  // Firebase Console -> Project settings -> General -> Your apps -> Web app.
+  // deviceId must match FIREBASE_DEVICE_ID in the ESP32's secrets.h.
+  //
+  // No password is needed here: database.rules.json only requires an
+  // authenticated (even anonymous) session to read devices/*, and
+  // firebase-client.js signs in anonymously by default. Firebase Web API
+  // keys are not secret — see firebase-client.js's header comment.
+  //
+  // To develop locally against the Firebase Emulator Suite instead, swap
+  // useEmulator back to true and firebaseConfig.databaseURL back to
+  // "http://127.0.0.1:9000/?ns=entraiot-dev-default-rtdb".
   window.__ENTRAIOT_CONFIG__ = {
     firebaseConfig: {
-      apiKey: "demo-key",
+      apiKey: "AIzaSyDIewS_zEkQVQkrWeNFqklJgaUkDdUFFRA",
       authDomain: "entraiot-dev.firebaseapp.com",
-      databaseURL: "http://127.0.0.1:9000/?ns=entraiot-dev-default-rtdb",
+      databaseURL: "https://entraiot-dev-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "entraiot-dev"
     },
-    homeId: "home_demo1",
-    deviceId: null,
-    useEmulator: true,
+    deviceId: "esp32_001",
+    useEmulator: false,
     auth: null
   };
 </script>
@@ -40,62 +53,15 @@
   @keyframes pulseGlowRed { 0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.5); } 50% { box-shadow: 0 0 0 6px rgba(248,113,113,0); } }
   @keyframes floatY { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
   @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-  /* ---- Mobile / tablet responsive layer ----------------------------------
-     Everything above stays inline-styled (unchanged, per the "preserve the
-     existing UI" requirement). This block only ADDS breakpoint behavior via
-     a handful of class names — it never overrides desktop appearance. */
-  html, body { overflow-x: hidden; max-width: 100%; }
-  .app-shell, .main-content { overflow-x: hidden; }
-  .hamburger-btn { display: none; }
-  .sidebar-backdrop { display: none; }
-
-  @media (max-width: 960px) {
-    .two-col-grid { grid-template-columns: 1fr !important; }
-    .health-grid { grid-template-columns: 1fr 1fr !important; }
-  }
-
-  @media (max-width: 860px) {
-    .sidebar {
-      position: fixed !important;
-      top: 0; left: 0; height: 100vh;
-      transform: translateX(-100%);
-      transition: transform 0.25s ease;
-      z-index: 60;
-      box-shadow: 0 0 40px rgba(0,0,0,0.55);
-    }
-    .sidebar.is-open { transform: translateX(0); }
-    .hamburger-btn { display: flex !important; }
-    .sidebar-backdrop.is-open {
-      display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      z-index: 55; animation: fadeSlideIn 0.15s ease;
-    }
-    .top-header { padding: 0 14px !important; gap: 8px; }
-    .top-header .header-clock { display: none !important; }
-    .main-content { padding: 16px 14px 40px !important; }
-    .device-fields-grid { grid-template-columns: 1fr 1fr !important; }
-    .alert-summary-grid { flex-wrap: wrap !important; }
-    .alert-summary-grid > div { flex: 1 1 120px !important; }
-  }
-
-  @media (max-width: 480px) {
-    .device-fields-grid { grid-template-columns: 1fr !important; }
-    .health-grid { grid-template-columns: 1fr !important; }
-    .hide-on-xs { display: none !important; }
-    .status-badge { padding: 6px 8px !important; }
-    .top-header { gap: 6px !important; }
-  }
 </style>
 </helmet>
 
 <canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:0.5;pointer-events:none;z-index:0"></canvas>
 <div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, rgba(56,189,248,0.08), transparent 45%), radial-gradient(circle at 85% 80%, rgba(56,189,248,0.06), transparent 50%), #05070d;z-index:0"></div>
 
-<div class="app-shell" style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:#e2e8f0;font-family:'Inter',sans-serif">
+<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:#e2e8f0;font-family:'Inter',sans-serif">
 
-  <div class="sidebar-backdrop {{ sidebarBackdropClass }}" onClick="{{ closeSidebar }}"></div>
-
-  <aside class="sidebar {{ sidebarOpenClass }}" style="width:236px;flex:none;height:100%;background:rgba(8,12,22,0.65);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid rgba(56,189,248,0.14);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
+  <aside style="width:236px;flex:none;height:100%;background:rgba(8,12,22,0.65);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid rgba(56,189,248,0.14);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
     <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px;border-bottom:1px solid rgba(56,189,248,0.1);margin-bottom:18px">
       <div style="width:36px;height:36px;flex:none;border-radius:10px;overflow:hidden;box-shadow:0 0 18px rgba(56,189,248,0.45)">
         <img src="./assets/logo/entraiot-smart-home.png" alt="Entraiot Smart Home logo" style="width:100%;height:100%;object-fit:contain;display:block" />
@@ -123,33 +89,26 @@
 
   <div style="flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0">
 
-    <header class="top-header" style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(8,12,22,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(56,189,248,0.1);gap:14px">
-      <div style="display:flex;align-items:center;gap:12px;min-width:0">
-        <div class="hamburger-btn" onClick="{{ toggleSidebar }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:3px">
-          <div style="width:16px;height:1.6px;background:#cbd5e1"></div>
-          <div style="width:16px;height:1.6px;background:#cbd5e1"></div>
-          <div style="width:16px;height:1.6px;background:#cbd5e1"></div>
-        </div>
-        <div style="min-width:0;overflow:hidden">
-          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#f1f5f9;white-space:nowrap">{{ viewTitle }}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Entraiot Smart IoT Monitoring Dashboard</div>
-        </div>
+    <header style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(8,12,22,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(56,189,248,0.1)">
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#f1f5f9">{{ viewTitle }}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:1px">Entraiot Smart IoT Monitoring Dashboard</div>
       </div>
 
       <div style="display:flex;align-items:center;gap:14px">
-        <div class="header-clock" style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:#94a3b8;text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid rgba(148,163,184,0.15)">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:#94a3b8;text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid rgba(148,163,184,0.15)">
           <div style="color:#e2e8f0;font-weight:600">{{ clockTime }}</div>
           <div style="font-size:10px;color:#64748b">{{ clockDate }}</div>
         </div>
 
-        <div class="status-badge" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ wifiColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span class="hide-on-xs" style="font-size:11px;color:#cbd5e1;white-space:nowrap">{{ wifiLabel }}</span>
+          <span style="font-size:11px;color:#cbd5e1">{{ wifiLabel }}</span>
         </div>
 
-        <div class="status-badge" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ espColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span class="hide-on-xs" style="font-size:11px;color:#cbd5e1;white-space:nowrap">{{ espLabel }}</span>
+          <span style="font-size:11px;color:#cbd5e1">{{ espLabel }}</span>
         </div>
 
         <div style="position:relative">
@@ -176,16 +135,16 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:9px;padding-left:6px">
-          <div style="width:32px;height:32px;flex:none;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#031018">AD</div>
-          <div class="hide-on-xs" style="line-height:1.25">
-            <div style="font-size:12px;font-weight:600;color:#e2e8f0;white-space:nowrap">Admin</div>
-            <div style="font-size:10px;color:#64748b;white-space:nowrap">System Operator</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#031018">AD</div>
+          <div style="line-height:1.25">
+            <div style="font-size:12px;font-weight:600;color:#e2e8f0">Admin</div>
+            <div style="font-size:10px;color:#64748b">System Operator</div>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="main-content" style="flex:1;overflow-y:auto;padding:26px 30px 50px">
+    <main style="flex:1;overflow-y:auto;padding:26px 30px 50px">
 
       <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
         <div>
@@ -239,14 +198,14 @@
             </div>
           </div>
 
-          <div class="two-col-grid" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
             <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
               <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">Device Status — ESP32</div>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
                 <div style="width:9px;height:9px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
                 <span style="font-size:13px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
               </div>
-              <div class="device-fields-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
                   <div style="padding:9px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
                     <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
@@ -280,7 +239,7 @@
       <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
         <div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Live Monitoring</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;margin-bottom:22px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
             <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
               <div style="background:linear-gradient(135deg,rgba(30,41,59,0.55),rgba(15,23,42,0.65));border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border:1px solid {{ s.borderColor }};box-shadow:0 0 30px {{ s.glow }}">
                 <span style="font-size:26px">{{ s.icon }}</span>
@@ -296,19 +255,6 @@
                     <div style="font-size:12.5px;font-weight:600;color:#f1f5f9;padding:0 6px;text-align:center">{{ s.valueText }}</div>
                   </div>
                 </sc-if>
-              </div>
-            </sc-for>
-          </div>
-
-          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.14);border-radius:16px;padding:8px">
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;padding:12px 14px 6px">Recent History</div>
-            <div style="font-size:10.5px;color:#64748b;padding:0 14px 10px">Live from /homes/&lt;homeId&gt;/history — written directly by the device</div>
-            <sc-for list="{{ historyRows }}" as="h" hint-placeholder-count="10">
-              <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(148,163,184,0.08)">
-                <span style="font-size:16px;flex:none">{{ h.icon }}</span>
-                <span style="font-size:12.5px;color:#e2e8f0;flex:1">{{ h.label }}</span>
-                <span style="font-size:12.5px;color:#f1f5f9;font-weight:600;font-family:'Space Grotesk',sans-serif">{{ h.valueText }}</span>
-                <span style="font-size:11px;color:#64748b;flex:none;width:70px;text-align:right">{{ h.time }}</span>
               </div>
             </sc-for>
           </div>
@@ -398,7 +344,7 @@
       <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
         <div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Alert System</div>
-          <div class="alert-summary-grid" style="display:flex;gap:14px;margin-bottom:20px">
+          <div style="display:flex;gap:14px;margin-bottom:20px">
             <div style="flex:1;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:14px;padding:16px">
               <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">Critical</div>
               <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#f87171;margin-top:4px">{{ criticalCount }}</div>
@@ -433,7 +379,7 @@
       <sc-if value="{{ isHealth }}" hint-placeholder-val="{{ false }}">
         <div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Device Health — ESP32</div>
-          <div class="health-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
             <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
               <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ cpuColor }} {{ cpu }}%, rgba(255,255,255,0.06) 0)">
                 <div style="width:104px;height:104px;border-radius:50%;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center">
@@ -456,7 +402,7 @@
               <div style="width:10px;height:10px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
               <span style="font-size:14px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
             </div>
-            <div class="device-fields-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
               <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
                 <div style="padding:11px 14px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
                   <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
@@ -499,10 +445,6 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 const BLUE = '#38bdf8', GREEN = '#34d399', RED = '#f87171', AMBER = '#fbbf24', SLATE = '#64748b';
-// Was presenceCheck's threshold (Cloud Function, ran every minute). Now
-// applied client-side every tick — see tick() — since Spark has no
-// scheduled Cloud Functions.
-const OFFLINE_THRESHOLD_MS = 120 * 1000;
 const rgba = (hex, a) => {
   const map = { '#38bdf8':'56,189,248', '#34d399':'52,211,153', '#f87171':'248,113,113', '#fbbf24':'251,191,36', '#64748b':'100,116,139', '#a78bfa':'167,139,250', '#fb923c':'251,146,60' };
   return `rgba(${map[hex] || '148,163,184'},${a})`;
@@ -519,7 +461,6 @@ class Component extends DCLogic {
     uptimeSec: 0,
     notifOpen: false,
     notifRead: 0,
-    sidebarOpen: false,
     flame: 'safe', pir: 'no-motion', vibration: 'stable',
     rain: 0, soil: 0, distance: 0, temperature: 0, humidity: 0,
     gasLevel: 0, gasQuality: 'Good', smoke: false,
@@ -533,77 +474,23 @@ class Component extends DCLogic {
     //  2. every live sensor sample thereafter (applySensorUpdate).
     // No client-side random generation remains anywhere in this file.
     history: { soil: [], rain: [], distance: [], temp: [], humidity: [], gas: [] },
-    // Recent discrete samples read from /homes/{homeId}/history/{sensor} —
-    // written directly by the ESP32/emulator (Spark plan has no Cloud
-    // Function to buffer these). Backs the "Recent History" log panel.
-    recentHistory: { temperature: [], gas: [], soil: [] },
     filterRange: '24h',
     displayed: { avgTemp: 0, avgHumidity: 0, avgSoil: 0, avgRain: 0, avgGas: 0, motionToday: 0, fireToday: 0, uptimePct: 100, healthScore: 100 },
-    // Populated live from homes/{homeId}/alerts — never written to locally.
+    // Populated live from devices/{deviceId}/alerts — never written to locally.
     alerts: []
   };
 
+  // How long status/lastSeen can go stale before we call the device
+  // "offline". Sensor/status syncs happen every CLOUD_SYNC_INTERVAL_MS
+  // (3-5s) on the firmware side, so 15s tolerates a couple of missed/slow
+  // syncs without flapping, while still reacting quickly to a real outage.
+  OFFLINE_THRESHOLD_MS = 15000;
+
   componentDidMount() {
-    this._bootTs = Date.now();
     this.clockTimer = setInterval(() => this.tick(), 1000);
     this.initThree();
     this.loadAnalyticsModules();
     this.subscribeFirebase();
-
-    // ---- Motion/smoke "events today" counters ---------------------------
-    // The alerts schema only has fire/gas/vibration/rain/offline types — no
-    // "motion" or "smoke" alert exists (a PIR trip or an elevated-gas
-    // reading isn't itself an alert). These summary cards are therefore
-    // computed here from live sensor transitions instead of from /alerts,
-    // and reset at local midnight.
-    this._dayKey = new Date().toDateString();
-    this._motionEventsToday = 0;
-    this._smokeEventsToday = 0;
-    this._prevMotionBool = null;
-    this._prevSmokeBool = null;
-
-    // ---- Foreground alert notifications ------------------------------
-    // No Cloud Function exists anymore to send FCM push notifications for
-    // critical alerts (that required Blaze). While the dashboard tab is
-    // open, a critical alert instead raises a browser Notification (if the
-    // user has granted permission) — a zero-cost, Spark-compatible
-    // substitute for the old onAlertCreated function's push path.
-    this._seenAlertIds = new Set();
-    if (window.Notification && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }
-
-  maybeRolloverDailyCounters() {
-    const key = new Date().toDateString();
-    if (this._dayKey !== key) {
-      this._dayKey = key;
-      this._motionEventsToday = 0;
-      this._smokeEventsToday = 0;
-    }
-  }
-
-  notifyIfCritical(alerts) {
-    if (!window.Notification || Notification.permission !== 'granted') return;
-    alerts.forEach(a => {
-      if (a.severity === 'critical' && !this._seenAlertIds.has(a.id)) {
-        this._seenAlertIds.add(a.id);
-        // Skip the notification burst on first load (every existing alert
-        // would otherwise fire at once) — only notify for alerts newer
-        // than when this tab opened.
-        if (a.ts >= this._bootTs) {
-          new Notification('EntraIoT Alert', { body: a.message, tag: a.id });
-        }
-      }
-    });
-  }
-
-  toggleSidebar() {
-    this.setState(st => ({ sidebarOpen: !st.sidebarOpen }));
-  }
-
-  closeSidebar() {
-    this.setState({ sidebarOpen: false });
   }
 
   // Dynamically loads the analytics calculation helpers module. Optional:
@@ -618,11 +505,10 @@ class Component extends DCLogic {
 
   // ---- Live Firebase wiring -------------------------------------------
   // Everything below replaces the old Math.random() simulation. All sensor,
-  // controller (heartbeat/status), device, and alert state now comes from
-  // homes/{homeId}/* in the existing Realtime Database, via firebase-client.js
-  // (window.EntraIoT). No dashboard code writes sensor/device data — only
-  // the ESP32 writes it (Spark plan — no Cloud Functions), per
-  // rtdb-schema.md.
+  // controller (heartbeat/status), and alert state now comes from
+  // devices/{deviceId}/* in the real Firebase Realtime Database, via
+  // firebase-client.js (window.EntraIoT). No dashboard code writes
+  // sensor/status/alert data — only the ESP32 does.
   async subscribeFirebase() {
     const api = window.EntraIoT;
     if (!api) { console.error('firebase-client.js did not load — check the <script type="module"> tag and window.__ENTRAIOT_CONFIG__'); return; }
@@ -630,19 +516,7 @@ class Component extends DCLogic {
 
     this._unsubSensors = api.onSensors((sensors) => this.applySensorUpdate(sensors));
     this._unsubController = api.onController((deviceId, controller) => this.applyController(deviceId, controller));
-    this._unsubAlerts = api.onAlerts((alerts) => {
-      this.setState({ alerts });
-      this.notifyIfCritical(alerts);
-    });
-
-    // /history/{sensor} is written directly by the ESP32/emulator (Part 4)
-    // and backs the "Recent History" log panel on the Live Monitoring view.
-    this._unsubHistory = {};
-    ['temperature', 'gas', 'soil'].forEach((sensor) => {
-      this._unsubHistory[sensor] = api.onHistory(sensor, (rows) => {
-        this.setState(st => ({ recentHistory: { ...st.recentHistory, [sensor]: rows } }));
-      }, 15);
-    });
+    this._unsubAlerts = api.onAlerts((alerts) => this.setState({ alerts }));
 
     // Seed today's rolling history from real hourly telemetry rollups so
     // charts have real data immediately, instead of starting empty.
@@ -680,41 +554,33 @@ class Component extends DCLogic {
     if (this.state.filterRange !== '24h' && this.state.filterRange !== 'today') this.forceUpdate();
   }
 
-  // Maps homes/{homeId}/sensors (written by the ESP32) onto the dashboard's
-  // display state. See docs/architecture/rtdb-schema.md for field meanings.
+  // Maps devices/{deviceId}/sensors (written by the ESP32, bare scalar
+  // values per field — no {v,raw,ts} wrapper) onto the dashboard's display
+  // state. Field meanings match syncToCloud() in the ESP32 .ino.
   applySensorUpdate(sensors) {
     if (!sensors || !Object.keys(sensors).length) return;
     const cur = this.state;
     const num = (v, fallback) => (typeof v === 'number' ? v : fallback);
 
-    const flame = sensors.flame ? (sensors.flame.v ? 'fire' : 'safe') : cur.flame;
-    const pir = sensors.motion ? (sensors.motion.v ? 'motion' : 'no-motion') : cur.pir;
-    const vibration = sensors.vibration ? (sensors.vibration.v ? 'triggered' : 'stable') : cur.vibration;
-    const temperature = sensors.temperature ? num(sensors.temperature.v, cur.temperature) : cur.temperature;
-    const humidity = sensors.humidity ? num(sensors.humidity.v, cur.humidity) : cur.humidity;
-    const soil = sensors.soil ? num(sensors.soil.v, cur.soil) : cur.soil;
-    const distance = sensors.distance ? num(sensors.distance.v, cur.distance) : cur.distance;
-    const gasLevel = sensors.gas ? num(sensors.gas.v, cur.gasLevel) : cur.gasLevel;
+    const flame = typeof sensors.fire === 'boolean' ? (sensors.fire ? 'fire' : 'safe') : cur.flame;
+    const pir = typeof sensors.motion === 'boolean' ? (sensors.motion ? 'motion' : 'no-motion') : cur.pir;
+    const vibration = typeof sensors.vibration === 'boolean' ? (sensors.vibration ? 'triggered' : 'stable') : cur.vibration;
+    const temperature = num(sensors.temperature, cur.temperature);
+    const humidity = num(sensors.humidity, cur.humidity);
+    const soil = num(sensors.soil, cur.soil);
+    const distance = num(sensors.distance, cur.distance);
+    const gasLevel = num(sensors.gas, cur.gasLevel);
 
-    // rain sensor in the schema reports a boolean "rain detected" (`v`) plus
-    // a raw analog reading (`raw`); the dashboard shows an intensity percent.
-    // Where `raw` is present we normalize it (lower raw = wetter, per the
-    // standard analog rain-sensor wiring documented in ESP32_API.md); we
-    // fall back to a flat 0/100 from the boolean if `raw` isn't sent yet.
-    let rain = cur.rain;
-    if (sensors.rain) {
-      if (typeof sensors.rain.raw === 'number') {
-        rain = clamp(Math.round((1 - sensors.rain.raw / 4095) * 100), 0, 100);
-      } else {
-        rain = sensors.rain.v ? 100 : 0;
-      }
-    }
+    // rain sensor is already a 0-100 intensity percent from the firmware
+    // (rawToGasCloudPct()-style normalization happens on-device now, not
+    // here) — just pass it through, clamped defensively.
+    const rain = typeof sensors.rain === 'number' ? clamp(Math.round(sensors.rain), 0, 100) : cur.rain;
 
-    // No dedicated "smoke" sensor exists in the current schema (Part 4's
-    // MQ-2 gas sensor is the same physical sensor used for both gas-leak and
-    // smoke detection). We derive a "smoke detected" flag from a stricter gas
+    // No dedicated "smoke" sensor exists in the current schema (the MQ-2 gas
+    // sensor is the same physical sensor used for both gas-leak and smoke
+    // detection). We derive a "smoke detected" flag from a stricter gas
     // threshold rather than inventing a new backend field. If a dedicated
-    // smoke sensor is added later, bump schemaVersion and read it directly.
+    // smoke sensor is added later, read it directly instead.
     const smoke = gasLevel > 750;
     const gasQuality = gasLevel > 600 ? 'Poor' : gasLevel > 350 ? 'Moderate' : 'Good';
 
@@ -725,48 +591,38 @@ class Component extends DCLogic {
       humidity: push(cur.history.humidity, humidity), gas: push(cur.history.gas, gasLevel)
     };
 
-    // "Events today" counters (see componentDidMount for why alerts can't
-    // supply these): count a rising edge (false -> true) as one event, not
-    // every tick the condition stays true.
-    this.maybeRolloverDailyCounters();
-    if (sensors.motion) {
-      const motionBool = !!sensors.motion.v;
-      if (motionBool && this._prevMotionBool === false) this._motionEventsToday++;
-      this._prevMotionBool = motionBool;
-    }
-    if (smoke && this._prevSmokeBool === false) this._smokeEventsToday++;
-    this._prevSmokeBool = smoke;
-
     this.setState({ flame, pir, vibration, rain, soil, distance, temperature, humidity, gasLevel, gasQuality, smoke, history });
   }
 
-  // Maps homes/{homeId}/controllers/{deviceId} (heartbeat + info + status)
-  // onto device health / info fields. `controllerStatus` here is just the
-  // device's own last self-reported value (it writes "online" once on
-  // first boot per ESP32_API.md §9) — tick() below recomputes the
-  // *displayed* online/offline from heartbeat staleness every second, which
-  // is what used to be presenceCheck's job before Cloud Functions were
-  // removed for the Spark plan.
+  // Maps devices/{deviceId}'s info/status/heartbeat (written by the ESP32)
+  // onto device health / info fields. There is no stored "online" flag —
+  // controllerStatus is recomputed every second in tick() from lastSeenTs,
+  // so a device that stops sending heartbeats is shown offline even though
+  // no new Firebase event arrives to re-trigger this callback.
   applyController(deviceId, controller) {
     if (!controller) return;
     const hb = controller.heartbeat || {};
     const info = controller.info || {};
+    const status = controller.status || {};
 
     if (typeof hb.uptimeS === 'number') {
       this._uptimeBaseline = { serverUptimeS: hb.uptimeS, receivedAt: Date.now() };
     }
 
+    // status/wifiRSSI + status/lastSeen are written on every sync (every
+    // 3-5s); heartbeat/* is only written periodically. Prefer the fresher
+    // status fields where both exist.
+    const rssi = typeof status.wifiRSSI === 'number' ? status.wifiRSSI : hb.rssi;
+    const lastSeenTs = typeof status.lastSeen === 'number' ? status.lastSeen : hb.ts;
+
     this.setState({
       deviceId,
-      wifiRSSI: typeof hb.rssi === 'number' ? hb.rssi : this.state.wifiRSSI,
+      wifiRSSI: typeof rssi === 'number' ? rssi : this.state.wifiRSSI,
       heapKB: typeof hb.freeHeap === 'number' ? hb.freeHeap : this.state.heapKB,
-      cpu: typeof hb.cpuLoadPct === 'number' ? hb.cpuLoadPct : this.state.cpu,
       ip: hb.ip || this.state.ip,
       mac: hb.mac || this.state.mac,
       firmware: hb.fw || info.fw || this.state.firmware,
-      battery: typeof hb.battery === 'number' ? hb.battery : null,
-      controllerStatus: controller.status || 'offline',
-      lastSeenTs: hb.ts || this.state.lastSeenTs
+      lastSeenTs: typeof lastSeenTs === 'number' ? lastSeenTs : this.state.lastSeenTs
     });
   }
 
@@ -777,31 +633,27 @@ class Component extends DCLogic {
     if (this._unsubSensors) this._unsubSensors();
     if (this._unsubController) this._unsubController();
     if (this._unsubAlerts) this._unsubAlerts();
-    if (this._unsubHistory) Object.values(this._unsubHistory).forEach(fn => fn && fn());
   }
 
   tick() {
     this.tickCount++;
     const patch = { now: new Date() };
 
-    // Interpolate uptime smoothly between the ~30s heartbeat writes instead
-    // of waiting for the next heartbeat to move the counter.
+    // Online/offline is derived here, every second, from lastSeenTs — NOT
+    // from any field stored in Firebase. This is what makes the dashboard
+    // correctly show "offline" when the ESP32 goes silent (power loss,
+    // WiFi drop, crash): there's no new Firebase event to react to in that
+    // case, so this has to be evaluated on our own clock instead of only
+    // inside applyController().
+    patch.controllerStatus = (this.state.lastSeenTs && (Date.now() - this.state.lastSeenTs) < this.OFFLINE_THRESHOLD_MS)
+      ? 'online' : 'offline';
+
+    // Interpolate uptime smoothly between heartbeat writes instead of
+    // waiting for the next heartbeat to move the counter.
     if (this._uptimeBaseline) {
       const elapsed = Math.floor((Date.now() - this._uptimeBaseline.receivedAt) / 1000);
       patch.uptimeSec = this._uptimeBaseline.serverUptimeS + elapsed;
     }
-
-    // Derive online/offline from heartbeat staleness — this is exactly what
-    // the old presenceCheck Cloud Function did (same 120s threshold), just
-    // computed here on the client every second instead of server-side once
-    // a minute, since Spark can't run scheduled Cloud Functions.
-    if (this.state.lastSeenTs) {
-      const age = Date.now() - this.state.lastSeenTs;
-      const liveStatus = age > OFFLINE_THRESHOLD_MS ? 'offline' : 'online';
-      if (liveStatus !== this.state.controllerStatus) patch.controllerStatus = liveStatus;
-    }
-
-    this.maybeRolloverDailyCounters();
 
     if (this.tickCount % 3 === 0) {
       // Smoothly animate the summary-card counters toward their real targets
@@ -816,10 +668,8 @@ class Component extends DCLogic {
         avgSoil: Math.round(lerp(d0.avgSoil, this.computeStats(s.history.soil).avg, 0.25)),
         avgRain: Math.round(lerp(d0.avgRain, this.computeStats(s.history.rain).avg, 0.25)),
         avgGas: Math.round(lerp(d0.avgGas, this.computeStats(s.history.gas).avg, 0.25)),
-        // Not from /alerts — see componentDidMount for why — these are
-        // live sensor-transition counters, reset at local midnight.
-        motionToday: this._motionEventsToday || 0,
-        fireToday: this.countAlertsToday('fire') + (this._smokeEventsToday || 0),
+        motionToday: this.countAlertsToday('motion'),
+        fireToday: this.countAlertsToday(['fire', 'smoke']),
         uptimePct: s.controllerStatus === 'online' ? d0.uptimePct : Math.max(0, d0.uptimePct - 0.1),
         healthScore: this.computeHealthScoreNow({ cpu: s.cpu, heapKB: s.heapKB, flame: s.flame, smoke: s.smoke, gasLevel: s.gasLevel, wifiRSSI: s.wifiRSSI })
       };
@@ -1005,30 +855,8 @@ class Component extends DCLogic {
     ];
     const sidebarItems = sidebarDefs.map(it => {
       const active = it.id === view;
-      return { ...it, select: () => this.setState({ activeView: it.id, sidebarOpen: false }), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
+      return { ...it, select: () => this.setState({ activeView: it.id }), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
     });
-
-    // ---- Mobile drawer sidebar --------------------------------------
-    const sidebarOpenClass = s.sidebarOpen ? 'is-open' : '';
-    const sidebarBackdropClass = s.sidebarOpen ? 'is-open' : '';
-
-    // ---- Recent History panel (Live Monitoring view) ------------------
-    // Merges /history/{temperature,gas,soil} raw samples into one
-    // newest-first activity log. Real device data only — see onHistory in
-    // firebase-client.js.
-    const historyUnitBySensor = { temperature: '°C', gas: 'ppm', soil: '%' };
-    const historyIconBySensor = { temperature: '🌡', gas: '💨', soil: '🌱' };
-    const historyRows = Object.entries(s.recentHistory)
-      .flatMap(([sensor, rows]) => (rows || []).map(r => ({
-        id: `${sensor}-${r.id}`,
-        icon: historyIconBySensor[sensor] || '📊',
-        label: sensor[0].toUpperCase() + sensor.slice(1),
-        valueText: `${r.v}${historyUnitBySensor[sensor] || ''}`,
-        time: this.timeAgo(r.ts),
-        ts: r.ts
-      })))
-      .sort((a, b) => b.ts - a.ts)
-      .slice(0, 15);
 
     const flameColor = s.flame === 'fire' ? RED : GREEN;
     const pirColor = s.pir === 'motion' ? BLUE : SLATE;
@@ -1160,10 +988,6 @@ class Component extends DCLogic {
 
     return {
       sidebarItems,
-      sidebarOpenClass, sidebarBackdropClass,
-      toggleSidebar: () => this.toggleSidebar(),
-      closeSidebar: () => this.closeSidebar(),
-      historyRows,
       viewTitle: viewTitles[view],
       isDashboard: view === 'dashboard', isLive: view === 'live', isAnalytics: view === 'analytics',
       isAlerts: view === 'alerts', isHealth: view === 'health', isSettings: view === 'settings',
