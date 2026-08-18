@@ -814,7 +814,7 @@ class Component extends DCLogic {
   OFFLINE_THRESHOLD_MS = 15000;
 
   componentDidMount() {
-    this.clockTimer = setInterval(() => this.tick(), 140);
+    this.clockTimer = setInterval(() => this.tick(), 1000);
     this.initThree();
     this.loadAnalyticsModules();
     this.subscribeFirebase();
