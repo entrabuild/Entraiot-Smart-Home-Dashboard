@@ -10,7 +10,14 @@
 <helmet data-dc-atomics>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  if (!window.THREE && !window.__entraiotThreeLoading) {
+    window.__entraiotThreeLoading = true;
+    var __threeScript = document.createElement('script');
+    __threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    document.head.appendChild(__threeScript);
+  }
+</script>
 <script>
   // Live production config — points at the real Firebase project so this
   // dashboard works from any device/location, in sync with the ESP32
@@ -92,6 +99,11 @@
   @keyframes floatY { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
   @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @property --beam-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  @keyframes beamSweep { from { --beam-angle: 0deg; } to { --beam-angle: 720deg; } }
+  @media (prefers-reduced-motion: no-preference) {
+    body, .app-aside, header, main, [style*="var(--panel"] { transition: background-color 260ms ease, border-color 260ms ease, color 260ms ease; }
+  }
 
   /* ---- Mobile responsive (<=860px: collapse sidebar into a slide-in drawer) ---- */
   .app-hamburger { display: none; }
@@ -121,7 +133,9 @@
 
   <canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:var(--three-opacity);pointer-events:none;z-index:0;transform:translateZ(0);will-change:transform"></canvas>
   <div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, var(--bg-radial-1), transparent 45%), radial-gradient(circle at 85% 80%, var(--bg-radial-2), transparent 50%), var(--bg);z-index:0;transform:translateZ(0);will-change:transform"></div>
-  <canvas ref="{{ sparkCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;opacity:0;transform:translateZ(0);will-change:opacity"></canvas>
+  <sc-if value="{{ beam.active }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;z-index:9999;pointer-events:none;box-sizing:border-box;top:{{ beam.top }}px;left:{{ beam.left }}px;width:{{ beam.width }}px;height:{{ beam.height }}px;border-radius:{{ beam.radius }}px;padding:2px;background:conic-gradient(from var(--beam-angle),transparent 0%,transparent 66%,{{ beam.c1 }} 80%,{{ beam.c2 }} 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beamSweep 640ms linear 1 forwards"></div>
+  </sc-if>
 
   <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ closeMobileNav }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;backdrop-filter:blur(2px)"></div>
@@ -644,7 +658,7 @@ const I18N = {
     currentReadingLabel: 'Current Reading', tapAnySensor: 'Tap any sensor card to see how it works and its live reading in detail.'
   },
   ta: {
-    tagline: 'என்ட்ரையாட் ஸ்மார்ட் IoT கண்காணிப்பு',
+    tagline: 'என்ட்ரையாட் ஸ்மார்ட் IoT கண்காணிப்பு டாஷ்போர்டு',
     navDashboard: 'டாஷ்போர்டு', navLive: 'நேரடி கண்காணிப்பு', navAnalytics: 'பகுப்பாய்வு',
     navAlerts: 'எச்சரிக்கைகள்', navHealth: 'சாதன ஆரோக்கியம்', navSettings: 'அமைப்புகள்',
     viewTitleDashboard: 'டாஷ்போர்டு கண்ணோட்டம்', viewTitleLive: 'நேரடி கண்காணிப்பு', viewTitleAnalytics: 'பகுப்பாய்வு',
@@ -738,7 +752,6 @@ const SENSOR_INFO = {
 
 class Component extends DCLogic {
   threeCanvasRef = React.createRef();
-  sparkCanvasRef = React.createRef();
   tickCount = 0;
 
   state = {
@@ -766,11 +779,12 @@ class Component extends DCLogic {
     alerts: [],
 
     // ---- UI/UX state (this revision) ----
-    theme: 'dark',            // 'dark' | 'light' — toggled by toggleTheme(), see the CSS vars in <style>
+    theme: (typeof localStorage !== 'undefined' && localStorage.getItem('entraiot-theme')) || (typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'), // 'dark' | 'light' — defaults to OS pref, then persisted (see toggleTheme)
     lang: 'en',                // 'en' | 'ta' — toggled by toggleLang(), see I18N below
     mobileNavOpen: false,      // sidebar drawer, <=860px only (see .app-aside CSS)
     selectedSensor: null,      // which sensor's detail page is showing when activeView === 'sensorDetail'
-    transitioning: false       // true while the spark transition canvas is animating (see navigate())
+    transitioning: false,      // true while a border-beam transition is animating (see navigate())
+    beam: { active: false, top: 0, left: 0, width: 0, height: 0, radius: 12, c1: '#38bdf8', c2: '#a78bfa' }
   };
 
   // How long status/lastSeen can go stale before we call the device
@@ -802,8 +816,20 @@ class Component extends DCLogic {
   // devices/{deviceId}/* in the real Firebase Realtime Database, via
   // firebase-client.js (window.EntraIoT). No dashboard code writes
   // sensor/status/alert data — only the ESP32 does.
+  waitForFirebaseApi(timeoutMs = 8000) {
+    return new Promise(resolve => {
+      if (window.EntraIoT) return resolve(window.EntraIoT);
+      const start = Date.now();
+      const iv = setInterval(() => {
+        if (window.EntraIoT) { clearInterval(iv); resolve(window.EntraIoT); }
+        else if (Date.now() - start > timeoutMs) { clearInterval(iv); resolve(null); }
+      }, 100);
+      this._apiWaitInterval = iv;
+    });
+  }
+
   async subscribeFirebase() {
-    const api = window.EntraIoT;
+    const api = await this.waitForFirebaseApi();
     if (!api) { console.error('firebase-client.js did not load — check the <script type="module"> tag and window.__ENTRAIOT_CONFIG__'); return; }
     await api.whenReady();
 
@@ -922,7 +948,9 @@ class Component extends DCLogic {
   componentWillUnmount() {
     clearInterval(this.clockTimer);
     if (this._raf) cancelAnimationFrame(this._raf);
-    if (this._sparkRaf) cancelAnimationFrame(this._sparkRaf);
+    clearTimeout(this._beamSwapTimer);
+    clearTimeout(this._beamTimer);
+    clearInterval(this._apiWaitInterval);
     window.removeEventListener('resize', this._resize);
     if (this._unsubSensors) this._unsubSensors();
     if (this._unsubController) this._unsubController();
@@ -948,7 +976,11 @@ class Component extends DCLogic {
   // ---- Theme / language / mobile nav ----------------------------------
 
   toggleTheme() {
-    this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }));
+    this.setState(st => {
+      const theme = st.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('entraiot-theme', theme); } catch (e) {}
+      return { theme };
+    });
   }
 
   toggleLang() {
@@ -963,134 +995,50 @@ class Component extends DCLogic {
     this.setState({ mobileNavOpen: false });
   }
 
-  // ---- Tab / sensor-card navigation with the electric-spark transition ----
+  // ---- Tab / sensor-card navigation with a one-shot border-beam transition ----
   // kind === 'view'   -> switches the sidebar tab (id is a sidebarDefs id)
   // kind === 'sensor' -> opens the per-sensor detail page for sensor `id`
-  navigate(kind, id) {
+  // targetEl is the clicked DOM node (sidebar item, sensor card, gas/wifi panel);
+  // the beam overlay is sized/positioned to match it via getBoundingClientRect,
+  // plays two fast laps around its border, then the new view swaps in underneath.
+  navigate(kind, id, targetEl) {
     if (this.state.transitioning) return; // ignore taps while a transition is already playing
-    this.setState({ transitioning: true, mobileNavOpen: false });
-    this.playSpark(() => {
+    const applyView = () => {
       if (kind === 'sensor') this.setState({ activeView: 'sensorDetail', selectedSensor: id });
       else this.setState({ activeView: id, selectedSensor: null });
-    });
-  }
+    };
+    const reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Recursive midpoint-displacement fractal bolt: gives a jagged, natural
-  // lightning silhouette instead of a straight line. Halving the
-  // displacement each recursion (the classic "plasma fractal" approach) is
-  // what makes deeper segments look progressively finer/more electric.
-  generateBoltPath(x1, y1, x2, y2, displace, depth) {
-    if (depth <= 0 || displace < 3) return [[x1, y1], [x2, y2]];
-    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * displace;
-    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * displace;
-    const left = this.generateBoltPath(x1, y1, mx, my, displace / 1.8, depth - 1);
-    const right = this.generateBoltPath(mx, my, x2, y2, displace / 1.8, depth - 1);
-    return [...left.slice(0, -1), ...right];
-  }
-
-  // Plays a realistic electric-spark transition on the always-mounted
-  // full-screen canvas (see sparkCanvasRef in the template), then calls
-  // onPeak() at the flash's brightest moment to swap the actual view
-  // underneath — the swap happens while the screen is white-hot, so it's
-  // invisible, avoiding any jank from driving this at 60fps through React
-  // state. Driven imperatively via requestAnimationFrame + canvas 2D calls;
-  // the ONLY setState() calls in the whole sequence are the one that starts
-  // it and the one at the very end that clears `transitioning`.
-  playSpark(onPeak) {
-    const canvas = this.sparkCanvasRef.current;
-    if (!canvas) { onPeak(); this.setState({ transitioning: false }); return; }
-    const ctx = canvas.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = window.innerWidth, h = window.innerHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    // Main bolt travels edge-to-edge (mimics the "passing through the
-    // page" motion asked for) with a handful of forked branch bolts, the
-    // same silhouette as the reference lightning photo.
-    const y1 = h * (0.3 + Math.random() * 0.35), y2 = h * (0.3 + Math.random() * 0.35);
-    const mainPts = this.generateBoltPath(-30, y1, w + 30, y2, h * 0.24, 7);
-    const branches = [];
-    const branchCount = 3 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < branchCount; i++) {
-      const idx = 2 + Math.floor(Math.random() * Math.max(1, mainPts.length - 4));
-      const [bx, by] = mainPts[idx];
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      const bx2 = bx + (70 + Math.random() * 160) * dir;
-      const by2 = by + (h * 0.1 + Math.random() * h * 0.16) * (Math.random() < 0.5 ? -1 : 1);
-      branches.push(this.generateBoltPath(bx, by, bx2, by2, 44, 4));
+    if (reduceMotion || !targetEl) {
+      // Plain 150ms fade, no beam, per prefers-reduced-motion (or if we
+      // somehow don't have a target element to measure).
+      this.setState({ transitioning: true, mobileNavOpen: false });
+      setTimeout(() => {
+        try { applyView(); } catch (e) { console.error(e); }
+        finally { this.setState({ transitioning: false }); }
+      }, 150);
+      return;
     }
 
-    const drawBolt = (pts, alpha, coreWidth, glowWidth) => {
-      if (pts.length < 2) return;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.shadowColor = '#7dd3fc';
-      ctx.shadowBlur = 28;
-      ctx.strokeStyle = '#bfe9ff';
-      ctx.lineWidth = glowWidth;
-      ctx.beginPath();
-      pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
-      ctx.stroke();
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = coreWidth;
-      ctx.stroke();
-      ctx.restore();
-    };
+    const r = targetEl.getBoundingClientRect();
+    const radius = parseFloat(getComputedStyle(targetEl).borderRadius) || 12;
+    const c1 = '#38bdf8', c2 = this.state.theme === 'light' ? '#c084fc' : '#a78bfa';
+    this.setState({
+      transitioning: true, mobileNavOpen: false,
+      beam: { active: true, top: r.top, left: r.left, width: r.width, height: r.height, radius, c1, c2 }
+    });
 
-    canvas.style.opacity = '1';
-    const start = performance.now();
-    const FLASH_IN = 90, GROW = 150, PEAK_HOLD = 70, FADE = 260;
-    const TOTAL = FLASH_IN + GROW + PEAK_HOLD + FADE;
-    let peaked = false;
-
-    const frame = (now) => {
-      const t = now - start;
-      ctx.clearRect(0, 0, w, h);
-
-      if (t < FLASH_IN) {
-        const p = t / FLASH_IN;
-        ctx.fillStyle = `rgba(4,10,20,${0.5 * p})`;
-        ctx.fillRect(0, 0, w, h);
-      } else if (t < FLASH_IN + GROW) {
-        const p = (t - FLASH_IN) / GROW;
-        ctx.fillStyle = 'rgba(4,10,20,0.5)';
-        ctx.fillRect(0, 0, w, h);
-        const count = Math.max(2, Math.floor(mainPts.length * p));
-        drawBolt(mainPts.slice(0, count), 1, 3, 14);
-        branches.forEach((b, i) => {
-          const bp = clamp((p - i * 0.08) * 1.6, 0, 1);
-          if (bp > 0) drawBolt(b.slice(0, Math.max(2, Math.floor(b.length * bp))), 0.85 * bp, 2, 9);
-        });
-        if (p > 0.72 && !peaked) { peaked = true; onPeak(); }
-      } else if (t < FLASH_IN + GROW + PEAK_HOLD) {
-        const p = (t - FLASH_IN - GROW) / PEAK_HOLD;
-        ctx.fillStyle = `rgba(255,255,255,${0.85 * (1 - p * 0.3)})`;
-        ctx.fillRect(0, 0, w, h);
-        drawBolt(mainPts, 1, 4, 16);
-        branches.forEach(b => drawBolt(b, 0.9, 2, 10));
-        if (!peaked) { peaked = true; onPeak(); }
-      } else if (t < TOTAL) {
-        const p = (t - FLASH_IN - GROW - PEAK_HOLD) / FADE;
-        ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - p)})`;
-        ctx.fillRect(0, 0, w, h);
-        drawBolt(mainPts, 1 - p, 3, 14 * (1 - p * 0.5));
-        branches.forEach(b => drawBolt(b, (1 - p) * 0.8, 2, 8));
-      } else {
-        ctx.clearRect(0, 0, w, h);
-        canvas.style.opacity = '0';
-        this.setState({ transitioning: false });
-        return;
-      }
-      this._sparkRaf = requestAnimationFrame(frame);
-    };
-    this._sparkRaf = requestAnimationFrame(frame);
+    const DURATION = 640; // ~2 laps at 640ms total, well within the 500-700ms target
+    clearTimeout(this._beamSwapTimer);
+    clearTimeout(this._beamTimer);
+    // Swap the underlying view partway through the sweep so it's revealed as
+    // the beam completes its second lap, then let the beam finish and hide.
+    this._beamSwapTimer = setTimeout(() => {
+      try { applyView(); } catch (e) { console.error(e); }
+    }, Math.round(DURATION * 0.6));
+    this._beamTimer = setTimeout(() => {
+      this.setState(st => ({ transitioning: false, beam: { ...st.beam, active: false } }));
+    }, DURATION);
   }
 
   tick() {
@@ -1316,7 +1264,7 @@ class Component extends DCLogic {
     ];
     const sidebarItems = sidebarDefs.map(it => {
       const active = it.id === view;
-      return { ...it, select: () => this.navigate('view', it.id), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
+      return { ...it, select: (e) => this.navigate('view', it.id, e.currentTarget), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
     });
 
     const flameColor = s.flame === 'fire' ? RED : GREEN;
@@ -1331,7 +1279,7 @@ class Component extends DCLogic {
     const card = (id, icon, label, color, valueText, isGauge, percent) => ({
       id, icon, label, statusColor: color, borderColor: rgba(color, 0.35), glow: rgba(color, 0.25),
       valueText, isGauge, isBinary: !isGauge, percent: percent ?? 0,
-      open: () => this.navigate('sensor', id)
+      open: (e) => this.navigate('sensor', id, e.currentTarget)
     });
 
     const sensorCards = [
@@ -1493,10 +1441,10 @@ class Component extends DCLogic {
       notifCount, notifOpen: s.notifOpen,
       toggleNotif: () => this.setState(st => ({ notifOpen: !st.notifOpen, notifRead: st.alerts.length })),
       notifPreview: alerts.slice(0, 4),
-      threeCanvasRef: this.threeCanvasRef, sparkCanvasRef: this.sparkCanvasRef,
+      threeCanvasRef: this.threeCanvasRef, beam: this.state.beam,
       sensorCards,
       gasBorderColor: rgba(gasLevelColor, 0.35), gasLevelColor, gasLevel: s.gasLevel, gasQuality: s.gasQuality, gasQualityColor, smokeColor, smokeLabel: s.smoke ? L.detected : L.clear,
-      openGasDetail: () => this.navigate('sensor', 'gas'), openWifiDetail: () => this.navigate('sensor', 'wifi'),
+      openGasDetail: (e) => this.navigate('sensor', 'gas', e.currentTarget), openWifiDetail: (e) => this.navigate('sensor', 'wifi', e.currentTarget),
       wifiRSSIColor, wifiRSSI: s.wifiRSSI, wifiBarsList,
       deviceOnlineColor: s.controllerStatus === 'online' ? GREEN : RED,
       deviceOnlineLabel: s.controllerStatus === 'online' ? L.deviceOnline : L.deviceOfflineSince.replace('{time}', s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : L.never),
