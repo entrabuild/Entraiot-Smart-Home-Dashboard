@@ -154,7 +154,7 @@
   <canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:var(--three-opacity);pointer-events:none;z-index:0;transform:translateZ(0);will-change:transform"></canvas>
   <div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, var(--bg-radial-1), transparent 45%), radial-gradient(circle at 85% 80%, var(--bg-radial-2), transparent 50%), var(--bg);z-index:0;transform:translateZ(0);will-change:transform"></div>
   <sc-if value="{{ beam.active }}" hint-placeholder-val="{{ false }}">
-    <div style="position:fixed;z-index:9999;pointer-events:none;box-sizing:border-box;top:{{ beam.top }}px;left:{{ beam.left }}px;width:{{ beam.width }}px;height:{{ beam.height }}px;border-radius:{{ beam.radius }}px;padding:2px;background:conic-gradient(from var(--beam-angle),transparent 0%,transparent 66%,{{ beam.c1 }} 80%,{{ beam.c2 }} 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beamSweep 1000ms linear 1 forwards"></div>
+    <div style="position:fixed;z-index:9999;pointer-events:none;box-sizing:border-box;top:{{ beam.top }}px;left:{{ beam.left }}px;width:{{ beam.width }}px;height:{{ beam.height }}px;border-radius:{{ beam.radius }}px;padding:2px;background:conic-gradient(from var(--beam-angle),transparent 0%,transparent 66%,{{ beam.c1 }} 80%,{{ beam.c2 }} 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beamSweep 100ms linear 1 forwards"></div>
   </sc-if>
 
   <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
@@ -1048,7 +1048,7 @@ class Component extends DCLogic {
       beam: { active: true, top: r.top, left: r.left, width: r.width, height: r.height, radius, c1, c2 }
     });
 
-    const DURATION = 1000; // 2 laps over 1000ms — beam stays visible after the new page opens
+    const DURATION = 100; // 2 laps over 1000ms — beam stays visible after the new page opens
     clearTimeout(this._beamSwapTimer);
     clearTimeout(this._beamTimer);
     // Swap the underlying view partway through the sweep so it's revealed as
