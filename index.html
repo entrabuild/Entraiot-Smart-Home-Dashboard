@@ -68,7 +68,9 @@
     --scrollbar-thumb: rgba(56,189,248,0.25);
     --bg-radial-1: rgba(56,189,248,0.08); --bg-radial-2: rgba(56,189,248,0.06);
     --three-opacity: 0.5;
+    --tamil-scale: 1;
   }
+  .lang-ta { --tamil-scale: 0.86; }
   /* Light theme — applied via a .theme-light class toggled on the app shell
      from state (see Component.state.theme / toggleTheme()). Only the tokens
      that actually need to differ are overridden here; everything else
@@ -116,25 +118,43 @@
     }
     .app-aside.nav-open { transform: translateX(0); }
     .app-header-clock { display: none !important; }
-    .app-header { padding: 0 14px !important; }
+    .app-header {
+      flex-wrap: wrap !important;
+      height: auto !important;
+      min-height: 66px;
+      padding: 10px 14px !important;
+      row-gap: 10px;
+    }
+    .app-header-titlewrap { width: 100%; }
+    .app-header-title, .app-header-tagline {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+    }
+    .app-header-icons {
+      width: 100%;
+      flex-wrap: wrap;
+      row-gap: 8px;
+      justify-content: flex-start !important;
+    }
     .app-main { padding: 16px 14px 40px !important; }
     .app-grid-2col { grid-template-columns: 1fr !important; }
     .app-grid-3col { grid-template-columns: repeat(2,1fr) !important; }
-    .app-status-pill-label { display: none; }
+    .app-status-pill-label { display: inline !important; }
   }
   @media (max-width: 480px) {
     .app-grid-3col { grid-template-columns: 1fr !important; }
-    .app-header-userbox { display: none !important; }
+    .app-header-userbox { display: flex !important; padding-left: 0 !important; }
   }
 </style>
 </helmet>
 
-<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:var(--text-body);font-family:'Inter',sans-serif" class="{{ themeClass }}">
+<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:var(--text-body);font-family:'Inter',sans-serif" class="{{ themeClass }} {{ langClass }}">
 
   <canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:var(--three-opacity);pointer-events:none;z-index:0;transform:translateZ(0);will-change:transform"></canvas>
   <div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, var(--bg-radial-1), transparent 45%), radial-gradient(circle at 85% 80%, var(--bg-radial-2), transparent 50%), var(--bg);z-index:0;transform:translateZ(0);will-change:transform"></div>
   <sc-if value="{{ beam.active }}" hint-placeholder-val="{{ false }}">
-    <div style="position:fixed;z-index:9999;pointer-events:none;box-sizing:border-box;top:{{ beam.top }}px;left:{{ beam.left }}px;width:{{ beam.width }}px;height:{{ beam.height }}px;border-radius:{{ beam.radius }}px;padding:2px;background:conic-gradient(from var(--beam-angle),transparent 0%,transparent 66%,{{ beam.c1 }} 80%,{{ beam.c2 }} 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beamSweep 140ms linear 1 forwards"></div>
+    <div style="position:fixed;z-index:9999;pointer-events:none;box-sizing:border-box;top:{{ beam.top }}px;left:{{ beam.left }}px;width:{{ beam.width }}px;height:{{ beam.height }}px;border-radius:{{ beam.radius }}px;padding:2px;background:conic-gradient(from var(--beam-angle),transparent 0%,transparent 66%,{{ beam.c1 }} 80%,{{ beam.c2 }} 90%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beamSweep 1000ms linear 1 forwards"></div>
   </sc-if>
 
   <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
@@ -142,13 +162,13 @@
   </sc-if>
 
   <aside class="app-aside {{ mobileNavClass }}" style="z-index:200;width:236px;flex:none;height:100%;background:var(--sidebar-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid var(--accent-border-2);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
-    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px;border-bottom:1px solid var(--accent-border-3);margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px calc(var(--tamil-scale) * 24px);border-bottom:1px solid var(--accent-border-3);margin-bottom:18px">
       <div style="width:38px;height:40px;flex:none;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center">
         <img src="./assets/logo/entraiot-smart-home.png" alt="Entraiot Smart Home logo" style="width:100%;height:100%;object-fit:contain;display:block" />
       </div>
       <div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.04em;color:var(--text-heading)">ENTRAIOT</div>
-        <div style="font-size:9.5px;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin-top:1px">Solutions</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:calc(var(--tamil-scale) * 14.5px);letter-spacing:0.04em;color:var(--text-heading)">ENTRAIOT</div>
+        <div style="font-size:calc(var(--tamil-scale) * 9.5px);letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin-top:1px">Solutions</div>
       </div>
     </div>
 
@@ -156,49 +176,49 @@
       <sc-for list="{{ sidebarItems }}" as="item" hint-placeholder-count="6">
         <div onClick="{{ item.select }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:background 0.15s" style-hover="background:var(--accent-tint)">
           <div style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ item.dotColor }};box-shadow:{{ item.dotShadow }}"></div>
-          <span style="font-size:13.5px;font-weight:{{ item.weight }};color:{{ item.textColor }}">{{ item.label }}</span>
+          <span style="font-size:calc(var(--tamil-scale) * 13.5px);font-weight:{{ item.weight }};color:{{ item.textColor }}">{{ item.label }}</span>
         </div>
       </sc-for>
     </nav>
 
     <div style="margin-top:auto;padding:14px 10px 4px;border-top:1px solid var(--accent-border-3)">
-      <div style="font-size:10px;color:#475569;letter-spacing:0.04em">FIRMWARE {{ firmware }}</div>
-      <div style="font-size:10px;color:#334155;margin-top:2px">© 2026 Entraiot Solutions</div>
+      <div style="font-size:calc(var(--tamil-scale) * 10px);color:#475569;letter-spacing:0.04em">FIRMWARE {{ firmware }}</div>
+      <div style="font-size:calc(var(--tamil-scale) * 10px);color:#334155;margin-top:2px">© 2026 Entraiot Solutions</div>
     </div>
   </aside>
 
   <div style="position:relative;z-index:1;flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0">
 
     <header class="app-header" style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:var(--header-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--accent-border-3)">
-      <div style="display:flex;align-items:center;gap:14px;min-width:0">
+      <div class="app-header-titlewrap" style="display:flex;align-items:center;gap:14px;min-width:0">
         <div onClick="{{ toggleMobileNav }}" class="app-hamburger" style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--surface-1);border:1px solid var(--border-2);align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:3px">
           <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
           <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
           <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
         </div>
         <div style="min-width:0">
-          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ viewTitle }}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;white-space:nowrap">{{ tagline }}</div>
+          <div class="app-header-title" style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:calc(var(--tamil-scale) * 15px);color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ viewTitle }}</div>
+          <div class="app-header-tagline" style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted);margin-top:1px;white-space:nowrap">{{ tagline }}</div>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="app-header-clock" style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text-secondary);text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid var(--border-1)">
+      <div class="app-header-icons" style="display:flex;align-items:center;gap:14px">
+        <div class="app-header-clock" style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 13px);color:var(--text-secondary);text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid var(--border-1)">
           <div style="color:var(--text-body);font-weight:600">{{ clockTime }}</div>
-          <div style="font-size:10px;color:var(--text-muted)">{{ clockDate }}</div>
+          <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted)">{{ clockDate }}</div>
         </div>
 
         <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:var(--surface-1);border:1px solid var(--border-2)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ wifiColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span class="app-status-pill-label" style="font-size:11px;color:var(--text-soft)">{{ wifiLabel }}</span>
+          <span class="app-status-pill-label" style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-soft)">{{ wifiLabel }}</span>
         </div>
 
         <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:var(--surface-1);border:1px solid var(--border-2)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ espColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span class="app-status-pill-label" style="font-size:11px;color:var(--text-soft)">{{ espLabel }}</span>
+          <span class="app-status-pill-label" style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-soft)">{{ espLabel }}</span>
         </div>
 
-        <div onClick="{{ toggleLang }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-soft);font-family:'Space Grotesk',sans-serif" title="{{ langToggleTitle }}">{{ langShort }}</div>
+        <div onClick="{{ toggleLang }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:calc(var(--tamil-scale) * 11px);font-weight:700;color:var(--text-soft);font-family:'Space Grotesk',sans-serif" title="{{ langToggleTitle }}">{{ langShort }}</div>
 
         <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer" title="{{ themeToggleTitle }}">
           <sc-if value="{{ isLightTheme }}" hint-placeholder-val="{{ false }}">
@@ -213,18 +233,18 @@
           <div onClick="{{ toggleNotif }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
             <div style="width:14px;height:14px;border:1.6px solid var(--text-secondary);border-radius:4px 4px 8px 8px;border-top:none;position:relative"><div style="position:absolute;top:-5px;left:3.5px;width:5px;height:5px;border:1.6px solid var(--text-secondary);border-radius:50% 50% 0 0;border-bottom:none"></div></div>
             <sc-if value="{{ notifCount }}" hint-placeholder-val="{{ true }}">
-              <div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:#f87171;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(248,113,113,0.6)">{{ notifCount }}</div>
+              <div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:#f87171;color:#fff;font-size:calc(var(--tamil-scale) * 9px);font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(248,113,113,0.6)">{{ notifCount }}</div>
             </sc-if>
           </div>
           <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
             <div style="position:absolute;top:44px;right:0;width:300px;background:var(--notif-bg);backdrop-filter:blur(24px);border:1px solid rgba(56,189,248,0.18);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:10px;z-index:20;animation:fadeSlideIn 0.18s ease">
-              <div style="font-size:11.5px;font-weight:600;color:var(--text-secondary);padding:6px 8px 10px;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.notifTitle }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11.5px);font-weight:600;color:var(--text-secondary);padding:6px 8px 10px;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.notifTitle }}</div>
               <sc-for list="{{ notifPreview }}" as="n" hint-placeholder-count="4">
                 <div style="display:flex;gap:9px;padding:8px;border-radius:9px" style-hover="background:var(--surface-1)">
                   <div style="width:6px;height:6px;border-radius:50%;flex:none;margin-top:5px;background:{{ n.color }}"></div>
                   <div>
-                    <div style="font-size:12px;color:var(--text-body)">{{ n.message }}</div>
-                    <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ n.time }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 12px);color:var(--text-body)">{{ n.message }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);margin-top:2px">{{ n.time }}</div>
                   </div>
                 </div>
               </sc-for>
@@ -233,10 +253,10 @@
         </div>
 
         <div class="app-header-userbox" style="display:flex;align-items:center;gap:9px;padding-left:6px">
-          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#031018">AD</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:calc(var(--tamil-scale) * 12px);font-weight:700;color:#031018">AD</div>
           <div style="line-height:1.25">
-            <div style="font-size:12px;font-weight:600;color:var(--text-body)">{{ adminLabel }}</div>
-            <div style="font-size:10px;color:var(--text-muted)">{{ operatorLabel }}</div>
+            <div style="font-size:calc(var(--tamil-scale) * 12px);font-weight:600;color:var(--text-body)">{{ adminLabel }}</div>
+            <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted)">{{ operatorLabel }}</div>
           </div>
         </div>
       </div>
@@ -247,19 +267,19 @@
       <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
         <div>
           <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading)">{{ i18n.liveSensorOverview }}</div>
-            <div style="font-size:11px;color:var(--text-muted)">{{ i18n.lastUpdated }} {{ clockTime }}</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading)">{{ i18n.liveSensorOverview }}</div>
+            <div style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted)">{{ i18n.lastUpdated }} {{ clockTime }}</div>
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:22px">
             <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
               <div onClick="{{ s.open }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);position:relative;overflow:hidden;border:1px solid {{ s.borderColor }};transition:transform 0.18s,box-shadow 0.18s" style-hover="transform:translateY(-3px);box-shadow:0 14px 34px {{ s.glow }}">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-                  <span style="font-size:22px;animation:floatY 3.4s ease-in-out infinite">{{ s.icon }}</span>
+                  <span style="font-size:calc(var(--tamil-scale) * 22px);animation:floatY 3.4s ease-in-out infinite">{{ s.icon }}</span>
                   <div style="width:8px;height:8px;border-radius:50%;background:{{ s.statusColor }}"></div>
                 </div>
-                <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ s.label }}</div>
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ s.valueText }}</div>
+                <div style="font-size:calc(var(--tamil-scale) * 11.5px);color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ s.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 22px);font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ s.valueText }}</div>
                 <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
                   <div style="width:100%;height:5px;border-radius:4px;background:var(--border-1);overflow:hidden">
                     <div style="height:100%;border-radius:4px;transition:width 0.6s ease;width:{{ s.percent }}%;background:{{ s.statusColor }}"></div>
@@ -270,24 +290,24 @@
 
             <div onClick="{{ openGasDetail }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);border:1px solid {{ gasBorderColor }};transition:transform 0.18s" style-hover="transform:translateY(-3px)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <span style="font-size:22px">💨</span>
+                <span style="font-size:calc(var(--tamil-scale) * 22px)">💨</span>
                 <div style="width:8px;height:8px;border-radius:50%;background:{{ gasLevelColor }}"></div>
               </div>
-              <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:8px">{{ i18n.mq2GasSensor }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11.5px);color:var(--text-secondary);font-weight:500;margin-bottom:8px">{{ i18n.mq2GasSensor }}</div>
               <div style="display:flex;flex-direction:column;gap:6px">
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.gasLevelLabel }}</span><span style="color:var(--text-heading);font-weight:600;color:{{ gasLevelColor }}">{{ gasLevel }} ppm</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.airQualityLabel }}</span><span style="font-weight:600;color:{{ gasQualityColor }}">{{ gasQuality }}</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.smokeLabel }}</span><span style="font-weight:600;color:{{ smokeColor }}">{{ smokeLabel }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11.5px)"><span style="color:var(--text-secondary)">{{ i18n.gasLevelLabel }}</span><span style="color:var(--text-heading);font-weight:600;color:{{ gasLevelColor }}">{{ gasLevel }} ppm</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11.5px)"><span style="color:var(--text-secondary)">{{ i18n.airQualityLabel }}</span><span style="font-weight:600;color:{{ gasQualityColor }}">{{ gasQuality }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11.5px)"><span style="color:var(--text-secondary)">{{ i18n.smokeLabel }}</span><span style="font-weight:600;color:{{ smokeColor }}">{{ smokeLabel }}</span></div>
               </div>
             </div>
 
             <div onClick="{{ openWifiDetail }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);border:1px solid {{ wifiRSSIColor }}33;transition:transform 0.18s" style-hover="transform:translateY(-3px)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <span style="font-size:22px">📶</span>
+                <span style="font-size:calc(var(--tamil-scale) * 22px)">📶</span>
                 <div style="width:8px;height:8px;border-radius:50%;background:{{ wifiRSSIColor }}"></div>
               </div>
-              <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ i18n.wifiSignalRSSI }}</div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ wifiRSSI }} dBm</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11.5px);color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ i18n.wifiSignalRSSI }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 22px);font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ wifiRSSI }} dBm</div>
               <div style="display:flex;gap:3px;align-items:flex-end;height:16px">
                 <sc-for list="{{ wifiBarsList }}" as="b" hint-placeholder-count="4">
                   <div style="width:6px;border-radius:2px;height:{{ b.h }}%;background:{{ b.color }}"></div>
@@ -298,16 +318,16 @@
 
           <div class="app-grid-2col" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.deviceStatusTitle }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.deviceStatusTitle }}</div>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
                 <div style="width:9px;height:9px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
-                <span style="font-size:13px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
+                <span style="font-size:calc(var(--tamil-scale) * 13px);font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
               </div>
               <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
                   <div style="padding:9px 12px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
-                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
-                    <div style="font-size:13px;color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 13px);color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
                   </div>
                 </sc-for>
               </div>
@@ -315,16 +335,16 @@
 
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;display:flex;flex-direction:column">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading)">{{ i18n.recentAlerts }}</div>
-                <span onClick="{{ goAlerts }}" style="font-size:11px;color:#38bdf8;cursor:pointer">{{ i18n.viewAll }}</span>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading)">{{ i18n.recentAlerts }}</div>
+                <span onClick="{{ goAlerts }}" style="font-size:calc(var(--tamil-scale) * 11px);color:#38bdf8;cursor:pointer">{{ i18n.viewAll }}</span>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <sc-for list="{{ alertPreview }}" as="a" hint-placeholder-count="4">
                   <div style="display:flex;gap:9px;align-items:flex-start">
                     <div style="width:6px;height:6px;border-radius:50%;margin-top:5px;flex:none;background:{{ a.color }}"></div>
                     <div>
-                      <div style="font-size:12px;color:var(--text-body)">{{ a.message }}</div>
-                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ a.time }}</div>
+                      <div style="font-size:calc(var(--tamil-scale) * 12px);color:var(--text-body)">{{ a.message }}</div>
+                      <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);margin-top:2px">{{ a.time }}</div>
                     </div>
                   </div>
                 </sc-for>
@@ -336,21 +356,21 @@
 
       <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.navLive }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.navLive }}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
             <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
               <div onClick="{{ s.open }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a2),var(--panel-b2));border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border:1px solid {{ s.borderColor }};box-shadow:0 0 30px {{ s.glow }};transition:transform 0.18s" style-hover="transform:translateY(-4px)">
-                <span style="font-size:26px">{{ s.icon }}</span>
-                <div style="font-size:12px;color:var(--text-secondary);font-weight:500">{{ s.label }}</div>
+                <span style="font-size:calc(var(--tamil-scale) * 26px)">{{ s.icon }}</span>
+                <div style="font-size:calc(var(--tamil-scale) * 12px);color:var(--text-secondary);font-weight:500">{{ s.label }}</div>
                 <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
                   <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient({{ s.statusColor }} {{ s.percent }}%, var(--surface-2) 0)">
-                    <div style="width:82px;height:82px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text-heading)">{{ s.valueText }}</div>
+                    <div style="width:82px;height:82px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 18px);font-weight:700;color:var(--text-heading)">{{ s.valueText }}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ s.isBinary }}" hint-placeholder-val="{{ true }}">
                   <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;box-shadow:inset 0 0 0 3px {{ s.statusColor }}">
                     <div style="width:12px;height:12px;border-radius:50%;animation:pulseGlow 1.8s infinite;background:{{ s.statusColor }}"></div>
-                    <div style="font-size:12.5px;font-weight:600;color:var(--text-heading);padding:0 6px;text-align:center">{{ s.valueText }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 12.5px);font-weight:600;color:var(--text-heading);padding:0 6px;text-align:center">{{ s.valueText }}</div>
                   </div>
                 </sc-if>
               </div>
@@ -363,18 +383,18 @@
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
             <div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading)">{{ i18n.analyticsTitle }}</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{ i18n.rollingWindow }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading)">{{ i18n.analyticsTitle }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted);margin-top:2px">{{ i18n.rollingWindow }}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <sc-for list="{{ filterOptions }}" as="f" hint-placeholder-count="5">
-                <div onClick="{{ f.select }}" style="padding:7px 14px;border-radius:20px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid {{ f.borderColor }};background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</div>
+                <div onClick="{{ f.select }}" style="padding:7px 14px;border-radius:20px;font-size:calc(var(--tamil-scale) * 11.5px);font-weight:600;cursor:pointer;border:1px solid {{ f.borderColor }};background:{{ f.bg }};color:{{ f.color }}">{{ f.label }}</div>
               </sc-for>
             </div>
             <div style="display:flex;gap:8px">
-              <div onClick="{{ exportPDF }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPdf }}</div>
-              <div onClick="{{ exportCSV }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportCsv }}</div>
-              <div onClick="{{ exportPNG }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPng }}</div>
+              <div onClick="{{ exportPDF }}" style="padding:8px 14px;border-radius:9px;font-size:calc(var(--tamil-scale) * 11.5px);font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPdf }}</div>
+              <div onClick="{{ exportCSV }}" style="padding:8px 14px;border-radius:9px;font-size:calc(var(--tamil-scale) * 11.5px);font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportCsv }}</div>
+              <div onClick="{{ exportPNG }}" style="padding:8px 14px;border-radius:9px;font-size:calc(var(--tamil-scale) * 11.5px);font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPng }}</div>
             </div>
           </div>
 
@@ -382,11 +402,11 @@
             <sc-for list="{{ summaryCards }}" as="c" hint-placeholder-count="9">
               <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-2);border-radius:14px;padding:16px;transition:transform 0.2s,box-shadow 0.2s" style-hover="transform:translateY(-3px);box-shadow:0 10px 30px var(--accent-border-1)">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                  <span style="font-size:18px">{{ c.icon }}</span>
-                  <span style="font-size:11px;font-weight:700;color:{{ c.trendColor }}">{{ c.trendArrow }} {{ c.trendPct }}</span>
+                  <span style="font-size:calc(var(--tamil-scale) * 18px)">{{ c.icon }}</span>
+                  <span style="font-size:calc(var(--tamil-scale) * 11px);font-weight:700;color:{{ c.trendColor }}">{{ c.trendArrow }} {{ c.trendPct }}</span>
                 </div>
-                <div style="font-size:10.5px;color:var(--text-secondary);font-weight:500;margin-bottom:3px">{{ c.label }}</div>
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--text-heading);margin-bottom:8px">{{ c.value }}<span style="font-size:11px;color:var(--text-muted);font-weight:500">{{ c.unit }}</span></div>
+                <div style="font-size:calc(var(--tamil-scale) * 10.5px);color:var(--text-secondary);font-weight:500;margin-bottom:3px">{{ c.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 21px);font-weight:700;color:var(--text-heading);margin-bottom:8px">{{ c.value }}<span style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted);font-weight:500">{{ c.unit }}</span></div>
                 <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" style="display:block">
                   <polyline points="{{ c.sparkline }}" fill="none" stroke="{{ c.trendColor }}" stroke-width="2"></polyline>
                 </svg>
@@ -396,41 +416,41 @@
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:22px">
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;align-self:start">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceResourceUsage }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceResourceUsage }}</div>
               <div style="display:flex;justify-content:space-around;gap:12px">
                 <sc-for list="{{ resourceGauges }}" as="g" hint-placeholder-count="3">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
                     <div style="width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ g.color }} {{ g.percent }}%, var(--surface-2) 0)">
-                      <div style="width:66px;height:66px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text-heading)">{{ g.value }}</div>
+                      <div style="width:66px;height:66px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:700;color:var(--text-heading)">{{ g.value }}</div>
                     </div>
-                    <div style="font-size:10.5px;color:var(--text-secondary);text-align:center">{{ g.label }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 10.5px);color:var(--text-secondary);text-align:center">{{ g.label }}</div>
                   </div>
                 </sc-for>
               </div>
             </div>
 
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.calculationsTitle }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.calculationsTitle }}</div>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
                 <sc-for list="{{ calcPanels }}" as="p" hint-placeholder-count="6">
                   <div style="padding:11px 12px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
-                    <div style="font-size:10.5px;color:var(--text-secondary);font-weight:600;margin-bottom:6px">{{ p.label }}</div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcNow }}</span><span style="font-weight:700;color:var(--text-heading)">{{ p.current }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcAvg }}</span><span>{{ p.avg }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcMinMax }}</span><span>{{ p.min }} / {{ p.max }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#38bdf8;margin-top:4px;border-top:1px solid var(--border-3);padding-top:4px"><span>{{ p.extraLabel }}</span><span style="font-weight:600">{{ p.extraValue }}</span></div>
+                    <div style="font-size:calc(var(--tamil-scale) * 10.5px);color:var(--text-secondary);font-weight:600;margin-bottom:6px">{{ p.label }}</div>
+                    <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11px);color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcNow }}</span><span style="font-weight:700;color:var(--text-heading)">{{ p.current }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11px);color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcAvg }}</span><span>{{ p.avg }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11px);color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcMinMax }}</span><span>{{ p.min }} / {{ p.max }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:calc(var(--tamil-scale) * 11px);color:#38bdf8;margin-top:4px;border-top:1px solid var(--border-3);padding-top:4px"><span>{{ p.extraLabel }}</span><span style="font-weight:600">{{ p.extraValue }}</span></div>
                   </div>
                 </sc-for>
               </div>
             </div>
 
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;align-self:start">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.aiInsightsTitle }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.aiInsightsTitle }}</div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <sc-for list="{{ insights }}" as="i" hint-placeholder-count="6">
                   <div style="display:flex;align-items:center;gap:10px">
                     <div style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ i.color }}"></div>
-                    <span style="font-size:12.5px;color:var(--text-body)">{{ i.text }}</span>
+                    <span style="font-size:calc(var(--tamil-scale) * 12.5px);color:var(--text-body)">{{ i.text }}</span>
                   </div>
                 </sc-for>
               </div>
@@ -441,19 +461,19 @@
 
       <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.alertSystemTitle }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.alertSystemTitle }}</div>
           <div style="display:flex;gap:14px;margin-bottom:20px">
             <div style="flex:1;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.criticalLabel }}</div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#f87171;margin-top:4px">{{ criticalCount }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11px);color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.criticalLabel }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 26px);font-weight:700;color:#f87171;margin-top:4px">{{ criticalCount }}</div>
             </div>
             <div style="flex:1;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#fde68a;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.warningLabel }}</div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fbbf24;margin-top:4px">{{ warningCount }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11px);color:#fde68a;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.warningLabel }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 26px);font-weight:700;color:#fbbf24;margin-top:4px">{{ warningCount }}</div>
             </div>
             <div style="flex:1;background:var(--accent-tint);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.infoLabel }}</div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#38bdf8;margin-top:4px">{{ infoCount }}</div>
+              <div style="font-size:calc(var(--tamil-scale) * 11px);color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.infoLabel }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 26px);font-weight:700;color:#38bdf8;margin-top:4px">{{ infoCount }}</div>
             </div>
           </div>
 
@@ -463,10 +483,10 @@
                 <div style="width:3px;border-radius:2px;flex:none;background:{{ a.color }}"></div>
                 <div style="flex:1;display:flex;justify-content:space-between;align-items:center">
                   <div>
-                    <div style="font-size:13px;color:var(--text-heading);font-weight:500">{{ a.icon }} {{ a.message }}</div>
-                    <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.04em;color:{{ a.color }}">{{ a.level }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 13px);color:var(--text-heading);font-weight:500">{{ a.icon }} {{ a.message }}</div>
+                    <div style="font-size:calc(var(--tamil-scale) * 10.5px);color:var(--text-muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.04em;color:{{ a.color }}">{{ a.level }}</div>
                   </div>
-                  <div style="font-size:11.5px;color:var(--text-muted);flex:none">{{ a.time }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 11.5px);color:var(--text-muted);flex:none">{{ a.time }}</div>
                 </div>
               </div>
             </sc-for>
@@ -476,21 +496,21 @@
 
       <sc-if value="{{ isHealth }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceHealthTitle }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceHealthTitle }}</div>
           <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
               <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ cpuColor }} {{ cpu }}%, var(--surface-2) 0)">
                 <div style="width:104px;height:104px;border-radius:50%;background:var(--surface-deep);display:flex;flex-direction:column;align-items:center;justify-content:center">
-                  <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text-heading)">{{ cpu }}%</div>
-                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ i18n.cpuUsage }}</div>
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 24px);font-weight:700;color:var(--text-heading)">{{ cpu }}%</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);margin-top:2px">{{ i18n.cpuUsage }}</div>
                 </div>
               </div>
             </div>
             <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
               <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ heapColor }} {{ heapPercent }}%, var(--surface-2) 0)">
                 <div style="width:104px;height:104px;border-radius:50%;background:var(--surface-deep);display:flex;flex-direction:column;align-items:center;justify-content:center">
-                  <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text-heading)">{{ heapKB }}KB</div>
-                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ i18n.freeHeap }}</div>
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 20px);font-weight:700;color:var(--text-heading)">{{ heapKB }}KB</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);margin-top:2px">{{ i18n.freeHeap }}</div>
                 </div>
               </div>
             </div>
@@ -498,13 +518,13 @@
           <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
               <div style="width:10px;height:10px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
-              <span style="font-size:14px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
+              <span style="font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
             </div>
             <div class="app-grid-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
               <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
                 <div style="padding:11px 14px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
-                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
-                  <div style="font-size:13.5px;color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 13.5px);color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
                 </div>
               </sc-for>
             </div>
@@ -514,13 +534,13 @@
 
       <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
         <div style="max-width:640px">
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.settingsTitle }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 16px);font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.settingsTitle }}</div>
           <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:8px;margin-bottom:18px">
             <sc-for list="{{ settingsToggles }}" as="t" hint-placeholder-count="4">
               <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border-3)">
                 <div>
-                  <div style="font-size:13.5px;color:var(--text-body);font-weight:500">{{ t.label }}</div>
-                  <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{ t.desc }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 13.5px);color:var(--text-body);font-weight:500">{{ t.label }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted);margin-top:2px">{{ t.desc }}</div>
                 </div>
                 <div onClick="{{ t.toggle }}" style="width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;transition:background 0.2s;background:{{ t.trackColor }}">
                   <div style="width:18px;height:18px;border-radius:50%;background:var(--text-heading);position:absolute;top:3px;transition:left 0.2s;left:{{ t.knobPos }}px"></div>
@@ -529,16 +549,16 @@
             </sc-for>
           </div>
           <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
-            <div style="font-size:13.5px;color:var(--text-body);font-weight:500;margin-bottom:10px">{{ i18n.sensorRefreshInterval }}</div>
+            <div style="font-size:calc(var(--tamil-scale) * 13.5px);color:var(--text-body);font-weight:500;margin-bottom:10px">{{ i18n.sensorRefreshInterval }}</div>
             <input type="range" min="1" max="10" value="{{ refreshInterval }}" onChange="{{ setRefreshInterval }}" style="width:100%;accent-color:#38bdf8"></input>
-            <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px">{{ updatingEveryLabel }}</div>
+            <div style="font-size:calc(var(--tamil-scale) * 11.5px);color:var(--text-muted);margin-top:6px">{{ updatingEveryLabel }}</div>
           </div>
         </div>
       </sc-if>
 
       <sc-if value="{{ isSensorDetail }}" hint-placeholder-val="{{ false }}">
         <div style="max-width:680px">
-          <div onClick="{{ backToDashboard }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#38bdf8;cursor:pointer;margin-bottom:16px;font-weight:600">
+          <div onClick="{{ backToDashboard }}" style="display:inline-flex;align-items:center;gap:6px;font-size:calc(var(--tamil-scale) * 12.5px);color:#38bdf8;cursor:pointer;margin-bottom:16px;font-weight:600">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
             {{ i18n.backButton }}
           </div>
@@ -546,27 +566,27 @@
           <sc-if value="{{ sensorDetailVM }}" hint-placeholder-val="{{ false }}">
             <div>
               <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:18px;padding:26px;display:flex;align-items:center;gap:22px;margin-bottom:20px;box-shadow:0 8px 28px var(--shadow)">
-                <div style="width:84px;height:84px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:38px;background:{{ sensorDetailVM.glow }};box-shadow:0 0 40px {{ sensorDetailVM.glow }}">{{ sensorDetailVM.icon }}</div>
+                <div style="width:84px;height:84px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:calc(var(--tamil-scale) * 38px);background:{{ sensorDetailVM.glow }};box-shadow:0 0 40px {{ sensorDetailVM.glow }}">{{ sensorDetailVM.icon }}</div>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:12.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ sensorDetailVM.label }}</div>
-                  <div style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:var(--text-heading)">{{ sensorDetailVM.valueText }}</div>
-                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px">{{ i18n.currentReadingLabel }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 12.5px);color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ sensorDetailVM.label }}</div>
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 30px);font-weight:700;color:var(--text-heading)">{{ sensorDetailVM.valueText }}</div>
+                  <div style="font-size:calc(var(--tamil-scale) * 11px);color:var(--text-muted);margin-top:4px">{{ i18n.currentReadingLabel }}</div>
                 </div>
                 <div style="width:10px;height:10px;border-radius:50%;flex:none;background:{{ sensorDetailVM.color }}"></div>
               </div>
 
               <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:22px;margin-bottom:18px">
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ i18n.howItWorksTitle }}</div>
-                <div style="font-size:13px;line-height:1.7;color:var(--text-body)">{{ sensorDetailVM.howItWorks }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ i18n.howItWorksTitle }}</div>
+                <div style="font-size:calc(var(--tamil-scale) * 13px);line-height:1.7;color:var(--text-body)">{{ sensorDetailVM.howItWorks }}</div>
               </div>
 
               <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:22px">
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.specsTitle }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:calc(var(--tamil-scale) * 14px);font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.specsTitle }}</div>
                 <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                   <sc-for list="{{ sensorDetailVM.specs }}" as="sp" hint-placeholder-count="4">
                     <div style="padding:10px 13px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
-                      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ sp.label }}</div>
-                      <div style="font-size:13px;color:var(--text-body);font-weight:600;margin-top:3px">{{ sp.value }}</div>
+                      <div style="font-size:calc(var(--tamil-scale) * 10px);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ sp.label }}</div>
+                      <div style="font-size:calc(var(--tamil-scale) * 13px);color:var(--text-body);font-weight:600;margin-top:3px">{{ sp.value }}</div>
                     </div>
                   </sc-for>
                 </div>
@@ -1028,7 +1048,7 @@ class Component extends DCLogic {
       beam: { active: true, top: r.top, left: r.left, width: r.width, height: r.height, radius, c1, c2 }
     });
 
-    const DURATION = 140; // 2 laps over 1000ms — beam stays visible after the new page opens
+    const DURATION = 1000; // 2 laps over 1000ms — beam stays visible after the new page opens
     clearTimeout(this._beamSwapTimer);
     clearTimeout(this._beamTimer);
     // Swap the underlying view partway through the sweep so it's revealed as
@@ -1466,6 +1486,7 @@ class Component extends DCLogic {
       themeToggleTitle: s.theme === 'dark' ? L.switchToLight : L.switchToDark,
       langShort: s.lang === 'en' ? 'EN' : 'TA',
       langToggleTitle: L.switchLanguage,
+      langClass: s.lang === 'ta' ? 'lang-ta' : '',
       toggleLang: () => this.toggleLang(),
       mobileNavClass: s.mobileNavOpen ? 'nav-open' : '',
       toggleMobileNav: () => this.toggleMobileNav(),
