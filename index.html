@@ -43,90 +43,174 @@
   };
 </script>
 <script type="module" src="./firebase-client.js"></script>
+<link rel="icon" type="image/png" href="./assets/logo/entraiot-smart-home.png">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; background: #05070d; }
+  :root {
+    --bg: #05070d;
+    --panel-a: rgba(30,41,59,0.5); --panel-b: rgba(15,23,42,0.6);
+    --panel-a2: rgba(30,41,59,0.55); --panel-b2: rgba(15,23,42,0.65);
+    --accent-border-1: rgba(56,189,248,0.15); --accent-border-2: rgba(56,189,248,0.14);
+    --accent-border-3: rgba(56,189,248,0.1); --accent-tint: rgba(56,189,248,0.08);
+    --surface-1: rgba(255,255,255,0.04); --surface-2: rgba(255,255,255,0.06); --surface-3: rgba(255,255,255,0.03);
+    --border-1: rgba(148,163,184,0.15); --border-2: rgba(148,163,184,0.12); --border-3: rgba(148,163,184,0.08);
+    --shadow: rgba(0,0,0,0.35);
+    --sidebar-bg: rgba(8,12,22,0.65); --header-bg: rgba(8,12,22,0.5); --notif-bg: rgba(10,15,26,0.92);
+    --text-heading: #f1f5f9; --text-body: #e2e8f0; --text-soft: #cbd5e1;
+    --text-secondary: #94a3b8; --text-muted: #64748b; --surface-deep: #0b1120;
+    --scrollbar-thumb: rgba(56,189,248,0.25);
+    --bg-radial-1: rgba(56,189,248,0.08); --bg-radial-2: rgba(56,189,248,0.06);
+    --three-opacity: 0.5;
+  }
+  /* Light theme — applied via a .theme-light class toggled on the app shell
+     from state (see Component.state.theme / toggleTheme()). Only the tokens
+     that actually need to differ are overridden here; everything else
+     (status reds/greens/ambers, the brand accent color itself, etc.) stays
+     identical across both themes on purpose. */
+  .theme-light {
+    --bg: #eef2f7;
+    --panel-a: rgba(255,255,255,0.86); --panel-b: rgba(241,245,249,0.92);
+    --panel-a2: rgba(255,255,255,0.9); --panel-b2: rgba(241,245,249,0.95);
+    --accent-border-1: rgba(14,165,233,0.28); --accent-border-2: rgba(14,165,233,0.22);
+    --accent-border-3: rgba(14,165,233,0.18); --accent-tint: rgba(14,165,233,0.1);
+    --surface-1: rgba(15,23,42,0.045); --surface-2: rgba(15,23,42,0.07); --surface-3: rgba(15,23,42,0.035);
+    --border-1: rgba(15,23,42,0.12); --border-2: rgba(15,23,42,0.1); --border-3: rgba(15,23,42,0.08);
+    --shadow: rgba(15,23,42,0.12);
+    --sidebar-bg: rgba(255,255,255,0.78); --header-bg: rgba(255,255,255,0.7); --notif-bg: rgba(255,255,255,0.97);
+    --text-heading: #0f172a; --text-body: #1e293b; --text-soft: #334155;
+    --text-secondary: #475569; --text-muted: #64748b; --surface-deep: #ffffff;
+    --scrollbar-thumb: rgba(14,165,233,0.3);
+    --bg-radial-1: rgba(14,165,233,0.07); --bg-radial-2: rgba(14,165,233,0.05);
+    --three-opacity: 0.18;
+  }
+  body { margin: 0; background: var(--bg); }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.25); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 8px; }
   @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.45); } 50% { box-shadow: 0 0 0 5px rgba(56,189,248,0); } }
   @keyframes pulseGlowRed { 0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.5); } 50% { box-shadow: 0 0 0 6px rgba(248,113,113,0); } }
   @keyframes floatY { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
   @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* ---- Mobile responsive (<=860px: collapse sidebar into a slide-in drawer) ---- */
+  .app-hamburger { display: none; }
+  @media (max-width: 860px) {
+    .app-hamburger { display: flex !important; }
+    .app-aside {
+      position: fixed !important; left: 0; top: 0; height: 100% !important; z-index: 200;
+      transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+      box-shadow: 20px 0 50px rgba(0,0,0,0.4);
+    }
+    .app-aside.nav-open { transform: translateX(0); }
+    .app-header-clock { display: none !important; }
+    .app-header { padding: 0 14px !important; }
+    .app-main { padding: 16px 14px 40px !important; }
+    .app-grid-2col { grid-template-columns: 1fr !important; }
+    .app-grid-3col { grid-template-columns: repeat(2,1fr) !important; }
+    .app-status-pill-label { display: none; }
+  }
+  @media (max-width: 480px) {
+    .app-grid-3col { grid-template-columns: 1fr !important; }
+    .app-header-userbox { display: none !important; }
+  }
 </style>
 </helmet>
 
-<canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:0.5;pointer-events:none;z-index:0"></canvas>
-<div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, rgba(56,189,248,0.08), transparent 45%), radial-gradient(circle at 85% 80%, rgba(56,189,248,0.06), transparent 50%), #05070d;z-index:0"></div>
+<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:var(--text-body);font-family:'Inter',sans-serif" class="{{ themeClass }}">
 
-<div style="position:relative;z-index:1;display:flex;height:100vh;width:100%;overflow:hidden;color:#e2e8f0;font-family:'Inter',sans-serif">
+  <canvas ref="{{ threeCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;opacity:var(--three-opacity);pointer-events:none;z-index:0;transform:translateZ(0);will-change:transform"></canvas>
+  <div style="position:fixed;inset:0;background:radial-gradient(circle at 20% 15%, var(--bg-radial-1), transparent 45%), radial-gradient(circle at 85% 80%, var(--bg-radial-2), transparent 50%), var(--bg);z-index:0;transform:translateZ(0);will-change:transform"></div>
+  <canvas ref="{{ sparkCanvasRef }}" style="position:fixed;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;opacity:0;transform:translateZ(0);will-change:opacity"></canvas>
 
-  <aside style="width:236px;flex:none;height:100%;background:rgba(8,12,22,0.65);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid rgba(56,189,248,0.14);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
-    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px;border-bottom:1px solid rgba(56,189,248,0.1);margin-bottom:18px">
-      <div style="width:36px;height:36px;flex:none;border-radius:10px;overflow:hidden;box-shadow:0 0 18px rgba(56,189,248,0.45)">
+  <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMobileNav }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;backdrop-filter:blur(2px)"></div>
+  </sc-if>
+
+  <aside class="app-aside {{ mobileNavClass }}" style="z-index:200;width:236px;flex:none;height:100%;background:var(--sidebar-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-right:1px solid var(--accent-border-2);display:flex;flex-direction:column;padding:22px 14px;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px;border-bottom:1px solid var(--accent-border-3);margin-bottom:18px">
+      <div style="width:38px;height:40px;flex:none;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center">
         <img src="./assets/logo/entraiot-smart-home.png" alt="Entraiot Smart Home logo" style="width:100%;height:100%;object-fit:contain;display:block" />
       </div>
       <div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.04em;color:#f1f5f9">ENTRAIOT</div>
-        <div style="font-size:9.5px;letter-spacing:0.08em;color:#64748b;text-transform:uppercase;margin-top:1px">Solutions</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.04em;color:var(--text-heading)">ENTRAIOT</div>
+        <div style="font-size:9.5px;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin-top:1px">Solutions</div>
       </div>
     </div>
 
     <nav style="display:flex;flex-direction:column;gap:3px">
       <sc-for list="{{ sidebarItems }}" as="item" hint-placeholder-count="6">
-        <div onClick="{{ item.select }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:background 0.15s" style-hover="background:rgba(56,189,248,0.08)">
+        <div onClick="{{ item.select }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:background 0.15s" style-hover="background:var(--accent-tint)">
           <div style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ item.dotColor }};box-shadow:{{ item.dotShadow }}"></div>
           <span style="font-size:13.5px;font-weight:{{ item.weight }};color:{{ item.textColor }}">{{ item.label }}</span>
         </div>
       </sc-for>
     </nav>
 
-    <div style="margin-top:auto;padding:14px 10px 4px;border-top:1px solid rgba(56,189,248,0.1)">
+    <div style="margin-top:auto;padding:14px 10px 4px;border-top:1px solid var(--accent-border-3)">
       <div style="font-size:10px;color:#475569;letter-spacing:0.04em">FIRMWARE {{ firmware }}</div>
       <div style="font-size:10px;color:#334155;margin-top:2px">© 2026 Entraiot Solutions</div>
     </div>
   </aside>
 
-  <div style="flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0">
+  <div style="position:relative;z-index:1;flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0">
 
-    <header style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(8,12,22,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(56,189,248,0.1)">
-      <div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#f1f5f9">{{ viewTitle }}</div>
-        <div style="font-size:11px;color:#64748b;margin-top:1px">Entraiot Smart IoT Monitoring Dashboard</div>
+    <header class="app-header" style="flex:none;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:var(--header-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--accent-border-3)">
+      <div style="display:flex;align-items:center;gap:14px;min-width:0">
+        <div onClick="{{ toggleMobileNav }}" class="app-hamburger" style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--surface-1);border:1px solid var(--border-2);align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:3px">
+          <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
+          <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
+          <div style="width:16px;height:1.6px;background:var(--text-body);border-radius:2px"></div>
+        </div>
+        <div style="min-width:0">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ viewTitle }}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;white-space:nowrap">{{ tagline }}</div>
+        </div>
       </div>
 
       <div style="display:flex;align-items:center;gap:14px">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:#94a3b8;text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid rgba(148,163,184,0.15)">
-          <div style="color:#e2e8f0;font-weight:600">{{ clockTime }}</div>
-          <div style="font-size:10px;color:#64748b">{{ clockDate }}</div>
+        <div class="app-header-clock" style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text-secondary);text-align:right;line-height:1.3;padding-right:8px;border-right:1px solid var(--border-1)">
+          <div style="color:var(--text-body);font-weight:600">{{ clockTime }}</div>
+          <div style="font-size:10px;color:var(--text-muted)">{{ clockDate }}</div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:var(--surface-1);border:1px solid var(--border-2)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ wifiColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span style="font-size:11px;color:#cbd5e1">{{ wifiLabel }}</span>
+          <span class="app-status-pill-label" style="font-size:11px;color:var(--text-soft)">{{ wifiLabel }}</span>
         </div>
 
-        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12)">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:var(--surface-1);border:1px solid var(--border-2)">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ espColor }};animation:pulseGlow 2.2s infinite"></div>
-          <span style="font-size:11px;color:#cbd5e1">{{ espLabel }}</span>
+          <span class="app-status-pill-label" style="font-size:11px;color:var(--text-soft)">{{ espLabel }}</span>
+        </div>
+
+        <div onClick="{{ toggleLang }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-soft);font-family:'Space Grotesk',sans-serif" title="{{ langToggleTitle }}">{{ langShort }}</div>
+
+        <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer" title="{{ themeToggleTitle }}">
+          <sc-if value="{{ isLightTheme }}" hint-placeholder-val="{{ false }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-body)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"></circle><line x1="12" y1="1.5" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22.5"></line><line x1="1.5" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22.5" y2="12"></line><line x1="4.6" y1="4.6" x2="6.3" y2="6.3"></line><line x1="17.7" y1="17.7" x2="19.4" y2="19.4"></line><line x1="4.6" y1="19.4" x2="6.3" y2="17.7"></line><line x1="17.7" y1="6.3" x2="19.4" y2="4.6"></line></svg>
+          </sc-if>
+          <sc-if value="{{ isDarkTheme }}" hint-placeholder-val="{{ true }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--text-body)" stroke="none"><path d="M20.7 15.6A9 9 0 1 1 8.4 3.3a7 7 0 0 0 12.3 12.3Z"></path></svg>
+          </sc-if>
         </div>
 
         <div style="position:relative">
-          <div onClick="{{ toggleNotif }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
-            <div style="width:14px;height:14px;border:1.6px solid #94a3b8;border-radius:4px 4px 8px 8px;border-top:none;position:relative"><div style="position:absolute;top:-5px;left:3.5px;width:5px;height:5px;border:1.6px solid #94a3b8;border-radius:50% 50% 0 0;border-bottom:none"></div></div>
+          <div onClick="{{ toggleNotif }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-1);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            <div style="width:14px;height:14px;border:1.6px solid var(--text-secondary);border-radius:4px 4px 8px 8px;border-top:none;position:relative"><div style="position:absolute;top:-5px;left:3.5px;width:5px;height:5px;border:1.6px solid var(--text-secondary);border-radius:50% 50% 0 0;border-bottom:none"></div></div>
             <sc-if value="{{ notifCount }}" hint-placeholder-val="{{ true }}">
               <div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:#f87171;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(248,113,113,0.6)">{{ notifCount }}</div>
             </sc-if>
           </div>
           <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
-            <div style="position:absolute;top:44px;right:0;width:300px;background:rgba(10,15,26,0.92);backdrop-filter:blur(24px);border:1px solid rgba(56,189,248,0.18);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:10px;z-index:20;animation:fadeSlideIn 0.18s ease">
-              <div style="font-size:11.5px;font-weight:600;color:#94a3b8;padding:6px 8px 10px;text-transform:uppercase;letter-spacing:0.05em">Recent Notifications</div>
+            <div style="position:absolute;top:44px;right:0;width:300px;background:var(--notif-bg);backdrop-filter:blur(24px);border:1px solid rgba(56,189,248,0.18);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:10px;z-index:20;animation:fadeSlideIn 0.18s ease">
+              <div style="font-size:11.5px;font-weight:600;color:var(--text-secondary);padding:6px 8px 10px;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.notifTitle }}</div>
               <sc-for list="{{ notifPreview }}" as="n" hint-placeholder-count="4">
-                <div style="display:flex;gap:9px;padding:8px;border-radius:9px" style-hover="background:rgba(255,255,255,0.04)">
+                <div style="display:flex;gap:9px;padding:8px;border-radius:9px" style-hover="background:var(--surface-1)">
                   <div style="width:6px;height:6px;border-radius:50%;flex:none;margin-top:5px;background:{{ n.color }}"></div>
                   <div>
-                    <div style="font-size:12px;color:#e2e8f0">{{ n.message }}</div>
-                    <div style="font-size:10px;color:#64748b;margin-top:2px">{{ n.time }}</div>
+                    <div style="font-size:12px;color:var(--text-body)">{{ n.message }}</div>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ n.time }}</div>
                   </div>
                 </div>
               </sc-for>
@@ -134,62 +218,62 @@
           </sc-if>
         </div>
 
-        <div style="display:flex;align-items:center;gap:9px;padding-left:6px">
+        <div class="app-header-userbox" style="display:flex;align-items:center;gap:9px;padding-left:6px">
           <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#1e40af);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#031018">AD</div>
           <div style="line-height:1.25">
-            <div style="font-size:12px;font-weight:600;color:#e2e8f0">Admin</div>
-            <div style="font-size:10px;color:#64748b">System Operator</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-body)">{{ adminLabel }}</div>
+            <div style="font-size:10px;color:var(--text-muted)">{{ operatorLabel }}</div>
           </div>
         </div>
       </div>
     </header>
 
-    <main style="flex:1;overflow-y:auto;padding:26px 30px 50px">
+    <main class="app-main" style="flex:1;overflow-y:auto;padding:26px 30px 50px">
 
       <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
         <div>
           <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9">Live Sensor Overview</div>
-            <div style="font-size:11px;color:#64748b">Last updated {{ clockTime }}</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading)">{{ i18n.liveSensorOverview }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">{{ i18n.lastUpdated }} {{ clockTime }}</div>
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:22px">
             <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
-              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);position:relative;overflow:hidden;border:1px solid {{ s.borderColor }}">
+              <div onClick="{{ s.open }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);position:relative;overflow:hidden;border:1px solid {{ s.borderColor }};transition:transform 0.18s,box-shadow 0.18s" style-hover="transform:translateY(-3px);box-shadow:0 14px 34px {{ s.glow }}">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
                   <span style="font-size:22px;animation:floatY 3.4s ease-in-out infinite">{{ s.icon }}</span>
                   <div style="width:8px;height:8px;border-radius:50%;background:{{ s.statusColor }}"></div>
                 </div>
-                <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:4px">{{ s.label }}</div>
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:#f1f5f9;margin-bottom:10px">{{ s.valueText }}</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ s.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ s.valueText }}</div>
                 <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
-                  <div style="width:100%;height:5px;border-radius:4px;background:rgba(148,163,184,0.15);overflow:hidden">
+                  <div style="width:100%;height:5px;border-radius:4px;background:var(--border-1);overflow:hidden">
                     <div style="height:100%;border-radius:4px;transition:width 0.6s ease;width:{{ s.percent }}%;background:{{ s.statusColor }}"></div>
                   </div>
                 </sc-if>
               </div>
             </sc-for>
 
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);border:1px solid {{ gasBorderColor }}">
+            <div onClick="{{ openGasDetail }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);border:1px solid {{ gasBorderColor }};transition:transform 0.18s" style-hover="transform:translateY(-3px)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <span style="font-size:22px">💨</span>
                 <div style="width:8px;height:8px;border-radius:50%;background:{{ gasLevelColor }}"></div>
               </div>
-              <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:8px">MQ-2 Gas Sensor</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:8px">{{ i18n.mq2GasSensor }}</div>
               <div style="display:flex;flex-direction:column;gap:6px">
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Gas Level</span><span style="color:#f1f5f9;font-weight:600;color:{{ gasLevelColor }}">{{ gasLevel }} ppm</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Air Quality</span><span style="font-weight:600;color:{{ gasQualityColor }}">{{ gasQuality }}</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:#94a3b8">Smoke</span><span style="font-weight:600;color:{{ smokeColor }}">{{ smokeLabel }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.gasLevelLabel }}</span><span style="color:var(--text-heading);font-weight:600;color:{{ gasLevelColor }}">{{ gasLevel }} ppm</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.airQualityLabel }}</span><span style="font-weight:600;color:{{ gasQualityColor }}">{{ gasQuality }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--text-secondary)">{{ i18n.smokeLabel }}</span><span style="font-weight:600;color:{{ smokeColor }}">{{ smokeLabel }}</span></div>
               </div>
             </div>
 
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);border:1px solid {{ wifiRSSIColor }}33">
+            <div onClick="{{ openWifiDetail }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border-radius:16px;padding:18px;box-shadow:0 8px 28px var(--shadow),inset 0 1px 0 var(--surface-1);border:1px solid {{ wifiRSSIColor }}33;transition:transform 0.18s" style-hover="transform:translateY(-3px)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <span style="font-size:22px">📶</span>
                 <div style="width:8px;height:8px;border-radius:50%;background:{{ wifiRSSIColor }}"></div>
               </div>
-              <div style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-bottom:4px">Wi-Fi Signal (RSSI)</div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:#f1f5f9;margin-bottom:10px">{{ wifiRSSI }} dBm</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ i18n.wifiSignalRSSI }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ wifiRSSI }} dBm</div>
               <div style="display:flex;gap:3px;align-items:flex-end;height:16px">
                 <sc-for list="{{ wifiBarsList }}" as="b" hint-placeholder-count="4">
                   <div style="width:6px;border-radius:2px;height:{{ b.h }}%;background:{{ b.color }}"></div>
@@ -198,35 +282,35 @@
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">Device Status — ESP32</div>
+          <div class="app-grid-2col" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.deviceStatusTitle }}</div>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
                 <div style="width:9px;height:9px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
                 <span style="font-size:13px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
-                  <div style="padding:9px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
-                    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
-                    <div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                  <div style="padding:9px 12px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                    <div style="font-size:13px;color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
                   </div>
                 </sc-for>
               </div>
             </div>
 
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;display:flex;flex-direction:column">
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;display:flex;flex-direction:column">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9">Recent Alerts</div>
-                <span onClick="{{ goAlerts }}" style="font-size:11px;color:#38bdf8;cursor:pointer">View all</span>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading)">{{ i18n.recentAlerts }}</div>
+                <span onClick="{{ goAlerts }}" style="font-size:11px;color:#38bdf8;cursor:pointer">{{ i18n.viewAll }}</span>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <sc-for list="{{ alertPreview }}" as="a" hint-placeholder-count="4">
                   <div style="display:flex;gap:9px;align-items:flex-start">
                     <div style="width:6px;height:6px;border-radius:50%;margin-top:5px;flex:none;background:{{ a.color }}"></div>
                     <div>
-                      <div style="font-size:12px;color:#e2e8f0">{{ a.message }}</div>
-                      <div style="font-size:10px;color:#64748b;margin-top:2px">{{ a.time }}</div>
+                      <div style="font-size:12px;color:var(--text-body)">{{ a.message }}</div>
+                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ a.time }}</div>
                     </div>
                   </div>
                 </sc-for>
@@ -238,21 +322,21 @@
 
       <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Live Monitoring</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.navLive }}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
             <sc-for list="{{ sensorCards }}" as="s" hint-placeholder-count="8">
-              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.55),rgba(15,23,42,0.65));border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border:1px solid {{ s.borderColor }};box-shadow:0 0 30px {{ s.glow }}">
+              <div onClick="{{ s.open }}" style="cursor:pointer;background:linear-gradient(135deg,var(--panel-a2),var(--panel-b2));border-radius:18px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border:1px solid {{ s.borderColor }};box-shadow:0 0 30px {{ s.glow }};transition:transform 0.18s" style-hover="transform:translateY(-4px)">
                 <span style="font-size:26px">{{ s.icon }}</span>
-                <div style="font-size:12px;color:#94a3b8;font-weight:500">{{ s.label }}</div>
+                <div style="font-size:12px;color:var(--text-secondary);font-weight:500">{{ s.label }}</div>
                 <sc-if value="{{ s.isGauge }}" hint-placeholder-val="{{ false }}">
-                  <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient({{ s.statusColor }} {{ s.percent }}%, rgba(255,255,255,0.06) 0)">
-                    <div style="width:82px;height:82px;border-radius:50%;background:#0b1120;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#f1f5f9">{{ s.valueText }}</div>
+                  <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient({{ s.statusColor }} {{ s.percent }}%, var(--surface-2) 0)">
+                    <div style="width:82px;height:82px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text-heading)">{{ s.valueText }}</div>
                   </div>
                 </sc-if>
                 <sc-if value="{{ s.isBinary }}" hint-placeholder-val="{{ true }}">
                   <div style="width:104px;height:104px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;box-shadow:inset 0 0 0 3px {{ s.statusColor }}">
                     <div style="width:12px;height:12px;border-radius:50%;animation:pulseGlow 1.8s infinite;background:{{ s.statusColor }}"></div>
-                    <div style="font-size:12.5px;font-weight:600;color:#f1f5f9;padding:0 6px;text-align:center">{{ s.valueText }}</div>
+                    <div style="font-size:12.5px;font-weight:600;color:var(--text-heading);padding:0 6px;text-align:center">{{ s.valueText }}</div>
                   </div>
                 </sc-if>
               </div>
@@ -265,8 +349,8 @@
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
             <div>
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9">Analytics — Real-Time Trends</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px">Rolling live window · updates every 3s</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading)">{{ i18n.analyticsTitle }}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{ i18n.rollingWindow }}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <sc-for list="{{ filterOptions }}" as="f" hint-placeholder-count="5">
@@ -274,21 +358,21 @@
               </sc-for>
             </div>
             <div style="display:flex;gap:8px">
-              <div onClick="{{ exportPDF }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export PDF</div>
-              <div onClick="{{ exportCSV }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export CSV</div>
-              <div onClick="{{ exportPNG }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);color:#cbd5e1" style-hover="border-color:rgba(56,189,248,0.4)">Export PNG</div>
+              <div onClick="{{ exportPDF }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPdf }}</div>
+              <div onClick="{{ exportCSV }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportCsv }}</div>
+              <div onClick="{{ exportPNG }}" style="padding:8px 14px;border-radius:9px;font-size:11.5px;font-weight:600;cursor:pointer;background:var(--surface-1);border:1px solid var(--border-1);color:var(--text-soft)" style-hover="border-color:rgba(56,189,248,0.4)">{{ i18n.exportPng }}</div>
             </div>
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:22px">
             <sc-for list="{{ summaryCards }}" as="c" hint-placeholder-count="9">
-              <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.14);border-radius:14px;padding:16px;transition:transform 0.2s,box-shadow 0.2s" style-hover="transform:translateY(-3px);box-shadow:0 10px 30px rgba(56,189,248,0.15)">
+              <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-2);border-radius:14px;padding:16px;transition:transform 0.2s,box-shadow 0.2s" style-hover="transform:translateY(-3px);box-shadow:0 10px 30px var(--accent-border-1)">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                   <span style="font-size:18px">{{ c.icon }}</span>
                   <span style="font-size:11px;font-weight:700;color:{{ c.trendColor }}">{{ c.trendArrow }} {{ c.trendPct }}</span>
                 </div>
-                <div style="font-size:10.5px;color:#94a3b8;font-weight:500;margin-bottom:3px">{{ c.label }}</div>
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:#f1f5f9;margin-bottom:8px">{{ c.value }}<span style="font-size:11px;color:#64748b;font-weight:500">{{ c.unit }}</span></div>
+                <div style="font-size:10.5px;color:var(--text-secondary);font-weight:500;margin-bottom:3px">{{ c.label }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--text-heading);margin-bottom:8px">{{ c.value }}<span style="font-size:11px;color:var(--text-muted);font-weight:500">{{ c.unit }}</span></div>
                 <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" style="display:block">
                   <polyline points="{{ c.sparkline }}" fill="none" stroke="{{ c.trendColor }}" stroke-width="2"></polyline>
                 </svg>
@@ -297,42 +381,42 @@
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:22px">
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;align-self:start">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Device Resource Usage</div>
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;align-self:start">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceResourceUsage }}</div>
               <div style="display:flex;justify-content:space-around;gap:12px">
                 <sc-for list="{{ resourceGauges }}" as="g" hint-placeholder-count="3">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-                    <div style="width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ g.color }} {{ g.percent }}%, rgba(255,255,255,0.06) 0)">
-                      <div style="width:66px;height:66px;border-radius:50%;background:#0b1120;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#f1f5f9">{{ g.value }}</div>
+                    <div style="width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ g.color }} {{ g.percent }}%, var(--surface-2) 0)">
+                      <div style="width:66px;height:66px;border-radius:50%;background:var(--surface-deep);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text-heading)">{{ g.value }}</div>
                     </div>
-                    <div style="font-size:10.5px;color:#94a3b8;text-align:center">{{ g.label }}</div>
+                    <div style="font-size:10.5px;color:var(--text-secondary);text-align:center">{{ g.label }}</div>
                   </div>
                 </sc-for>
               </div>
             </div>
 
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">Calculations</div>
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.calculationsTitle }}</div>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
                 <sc-for list="{{ calcPanels }}" as="p" hint-placeholder-count="6">
-                  <div style="padding:11px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
-                    <div style="font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:6px">{{ p.label }}</div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Now</span><span style="font-weight:700;color:#f1f5f9">{{ p.current }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Avg</span><span>{{ p.avg }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:2px"><span>Min / Max</span><span>{{ p.min }} / {{ p.max }}{{ p.unit }}</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#38bdf8;margin-top:4px;border-top:1px solid rgba(148,163,184,0.08);padding-top:4px"><span>{{ p.extraLabel }}</span><span style="font-weight:600">{{ p.extraValue }}</span></div>
+                  <div style="padding:11px 12px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
+                    <div style="font-size:10.5px;color:var(--text-secondary);font-weight:600;margin-bottom:6px">{{ p.label }}</div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcNow }}</span><span style="font-weight:700;color:var(--text-heading)">{{ p.current }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcAvg }}</span><span>{{ p.avg }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-bottom:2px"><span>{{ i18n.calcMinMax }}</span><span>{{ p.min }} / {{ p.max }}{{ p.unit }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#38bdf8;margin-top:4px;border-top:1px solid var(--border-3);padding-top:4px"><span>{{ p.extraLabel }}</span><span style="font-weight:600">{{ p.extraValue }}</span></div>
                   </div>
                 </sc-for>
               </div>
             </div>
 
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px;align-self:start">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:14px">AI Insights</div>
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px;align-self:start">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.aiInsightsTitle }}</div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <sc-for list="{{ insights }}" as="i" hint-placeholder-count="6">
                   <div style="display:flex;align-items:center;gap:10px">
                     <div style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ i.color }}"></div>
-                    <span style="font-size:12.5px;color:#e2e8f0">{{ i.text }}</span>
+                    <span style="font-size:12.5px;color:var(--text-body)">{{ i.text }}</span>
                   </div>
                 </sc-for>
               </div>
@@ -343,32 +427,32 @@
 
       <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Alert System</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.alertSystemTitle }}</div>
           <div style="display:flex;gap:14px;margin-bottom:20px">
             <div style="flex:1;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">Critical</div>
+              <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.criticalLabel }}</div>
               <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#f87171;margin-top:4px">{{ criticalCount }}</div>
             </div>
             <div style="flex:1;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#fde68a;text-transform:uppercase;letter-spacing:0.05em">Warning</div>
+              <div style="font-size:11px;color:#fde68a;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.warningLabel }}</div>
               <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fbbf24;margin-top:4px">{{ warningCount }}</div>
             </div>
-            <div style="flex:1;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:16px">
-              <div style="font-size:11px;color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em">Info</div>
+            <div style="flex:1;background:var(--accent-tint);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:16px">
+              <div style="font-size:11px;color:#7dd3fc;text-transform:uppercase;letter-spacing:0.05em">{{ i18n.infoLabel }}</div>
               <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#38bdf8;margin-top:4px">{{ infoCount }}</div>
             </div>
           </div>
 
-          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.14);border-radius:16px;padding:8px">
+          <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-2);border-radius:16px;padding:8px">
             <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="8">
-              <div style="display:flex;gap:14px;padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.08)">
+              <div style="display:flex;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-3)">
                 <div style="width:3px;border-radius:2px;flex:none;background:{{ a.color }}"></div>
                 <div style="flex:1;display:flex;justify-content:space-between;align-items:center">
                   <div>
-                    <div style="font-size:13px;color:#f1f5f9;font-weight:500">{{ a.icon }} {{ a.message }}</div>
-                    <div style="font-size:10.5px;color:#64748b;margin-top:3px;text-transform:uppercase;letter-spacing:0.04em;color:{{ a.color }}">{{ a.level }}</div>
+                    <div style="font-size:13px;color:var(--text-heading);font-weight:500">{{ a.icon }} {{ a.message }}</div>
+                    <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.04em;color:{{ a.color }}">{{ a.level }}</div>
                   </div>
-                  <div style="font-size:11.5px;color:#64748b;flex:none">{{ a.time }}</div>
+                  <div style="font-size:11.5px;color:var(--text-muted);flex:none">{{ a.time }}</div>
                 </div>
               </div>
             </sc-for>
@@ -378,35 +462,35 @@
 
       <sc-if value="{{ isHealth }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Device Health — ESP32</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
-              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ cpuColor }} {{ cpu }}%, rgba(255,255,255,0.06) 0)">
-                <div style="width:104px;height:104px;border-radius:50%;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center">
-                  <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#f1f5f9">{{ cpu }}%</div>
-                  <div style="font-size:10px;color:#64748b;margin-top:2px">CPU USAGE</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.deviceHealthTitle }}</div>
+          <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ cpuColor }} {{ cpu }}%, var(--surface-2) 0)">
+                <div style="width:104px;height:104px;border-radius:50%;background:var(--surface-deep);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text-heading)">{{ cpu }}%</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ i18n.cpuUsage }}</div>
                 </div>
               </div>
             </div>
-            <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
-              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ heapColor }} {{ heapPercent }}%, rgba(255,255,255,0.06) 0)">
-                <div style="width:104px;height:104px;border-radius:50%;background:#0b1120;display:flex;flex-direction:column;align-items:center;justify-content:center">
-                  <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#f1f5f9">{{ heapKB }}KB</div>
-                  <div style="font-size:10px;color:#64748b;margin-top:2px">FREE HEAP</div>
+            <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+              <div style="width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient({{ heapColor }} {{ heapPercent }}%, var(--surface-2) 0)">
+                <div style="width:104px;height:104px;border-radius:50%;background:var(--surface-deep);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text-heading)">{{ heapKB }}KB</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ i18n.freeHeap }}</div>
                 </div>
               </div>
             </div>
           </div>
-          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
+          <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
               <div style="width:10px;height:10px;border-radius:50%;background:{{ deviceOnlineColor }}"></div>
               <span style="font-size:14px;font-weight:600;color:{{ deviceOnlineColor }}">{{ deviceOnlineLabel }}</span>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="app-grid-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
               <sc-for list="{{ deviceFields }}" as="f" hint-placeholder-count="7">
-                <div style="padding:11px 14px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid rgba(148,163,184,0.08)">
-                  <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
-                  <div style="font-size:13.5px;color:#e2e8f0;font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
+                <div style="padding:11px 14px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
+                  <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ f.label }}</div>
+                  <div style="font-size:13.5px;color:var(--text-body);font-weight:600;margin-top:3px;font-family:'Space Grotesk',sans-serif">{{ f.value }}</div>
                 </div>
               </sc-for>
             </div>
@@ -416,25 +500,65 @@
 
       <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
         <div style="max-width:640px">
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px">Settings</div>
-          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:8px;margin-bottom:18px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px">{{ i18n.settingsTitle }}</div>
+          <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:8px;margin-bottom:18px">
             <sc-for list="{{ settingsToggles }}" as="t" hint-placeholder-count="4">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(148,163,184,0.08)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border-3)">
                 <div>
-                  <div style="font-size:13.5px;color:#e2e8f0;font-weight:500">{{ t.label }}</div>
-                  <div style="font-size:11px;color:#64748b;margin-top:2px">{{ t.desc }}</div>
+                  <div style="font-size:13.5px;color:var(--text-body);font-weight:500">{{ t.label }}</div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{ t.desc }}</div>
                 </div>
                 <div onClick="{{ t.toggle }}" style="width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;transition:background 0.2s;background:{{ t.trackColor }}">
-                  <div style="width:18px;height:18px;border-radius:50%;background:#f1f5f9;position:absolute;top:3px;transition:left 0.2s;left:{{ t.knobPos }}px"></div>
+                  <div style="width:18px;height:18px;border-radius:50%;background:var(--text-heading);position:absolute;top:3px;transition:left 0.2s;left:{{ t.knobPos }}px"></div>
                 </div>
               </div>
             </sc-for>
           </div>
-          <div style="background:linear-gradient(135deg,rgba(30,41,59,0.5),rgba(15,23,42,0.6));border:1px solid rgba(56,189,248,0.15);border-radius:16px;padding:20px">
-            <div style="font-size:13.5px;color:#e2e8f0;font-weight:500;margin-bottom:10px">Sensor Refresh Interval</div>
+          <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:20px">
+            <div style="font-size:13.5px;color:var(--text-body);font-weight:500;margin-bottom:10px">{{ i18n.sensorRefreshInterval }}</div>
             <input type="range" min="1" max="10" value="{{ refreshInterval }}" onChange="{{ setRefreshInterval }}" style="width:100%;accent-color:#38bdf8"></input>
-            <div style="font-size:11.5px;color:#64748b;margin-top:6px">Updating every {{ refreshInterval }} seconds</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px">{{ updatingEveryLabel }}</div>
           </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSensorDetail }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:680px">
+          <div onClick="{{ backToDashboard }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#38bdf8;cursor:pointer;margin-bottom:16px;font-weight:600">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+            {{ i18n.backButton }}
+          </div>
+
+          <sc-if value="{{ sensorDetailVM }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:18px;padding:26px;display:flex;align-items:center;gap:22px;margin-bottom:20px;box-shadow:0 8px 28px var(--shadow)">
+                <div style="width:84px;height:84px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:38px;background:{{ sensorDetailVM.glow }};box-shadow:0 0 40px {{ sensorDetailVM.glow }}">{{ sensorDetailVM.icon }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12.5px;color:var(--text-secondary);font-weight:500;margin-bottom:4px">{{ sensorDetailVM.label }}</div>
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:var(--text-heading)">{{ sensorDetailVM.valueText }}</div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px">{{ i18n.currentReadingLabel }}</div>
+                </div>
+                <div style="width:10px;height:10px;border-radius:50%;flex:none;background:{{ sensorDetailVM.color }}"></div>
+              </div>
+
+              <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:22px;margin-bottom:18px">
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:10px">{{ i18n.howItWorksTitle }}</div>
+                <div style="font-size:13px;line-height:1.7;color:var(--text-body)">{{ sensorDetailVM.howItWorks }}</div>
+              </div>
+
+              <div style="background:linear-gradient(135deg,var(--panel-a),var(--panel-b));border:1px solid var(--accent-border-1);border-radius:16px;padding:22px">
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text-heading);margin-bottom:14px">{{ i18n.specsTitle }}</div>
+                <div class="app-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ sensorDetailVM.specs }}" as="sp" hint-placeholder-count="4">
+                    <div style="padding:10px 13px;background:var(--surface-3);border-radius:9px;border:1px solid var(--border-3)">
+                      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">{{ sp.label }}</div>
+                      <div style="font-size:13px;color:var(--text-body);font-weight:600;margin-top:3px">{{ sp.value }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -451,8 +575,170 @@ const rgba = (hex, a) => {
 };
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// ---------------------------------------------------------------------------
+// I18N — English + Tamil. Covers UI chrome, nav, sensor names/status text,
+// analytics/settings copy, and the sensor-detail "how it works" pages.
+// Live values coming straight from Firebase (numbers, units, raw alert
+// messages the ESP32 writes) are NOT translated — only the surrounding UI
+// text is. See firebase-client.js / rtdb-schema.md for why alert message
+// text is plain English (written by firmware, not localizable client-side).
+// ---------------------------------------------------------------------------
+const I18N = {
+  en: {
+    tagline: 'Entraiot Smart IoT Monitoring Dashboard',
+    navDashboard: 'Dashboard', navLive: 'Live Monitoring', navAnalytics: 'Analytics',
+    navAlerts: 'Alerts', navHealth: 'Device Health', navSettings: 'Settings',
+    viewTitleDashboard: 'Dashboard Overview', viewTitleLive: 'Live Monitoring', viewTitleAnalytics: 'Analytics',
+    viewTitleAlerts: 'Alert System', viewTitleHealth: 'Device Health', viewTitleSettings: 'Settings',
+    viewTitleSensorDetail: 'Sensor Details',
+    adminLabel: 'Admin', operatorLabel: 'System Operator',
+    notifTitle: 'Recent Notifications',
+    switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', switchLanguage: 'தமிழில் காட்டு (Switch to Tamil)',
+    wifiConnected: 'Wi-Fi Connected', wifiUnreachable: 'Wi-Fi Unreachable',
+    espConnected: 'ESP32 Connected', espOffline: 'ESP32 Offline',
+    liveSensorOverview: 'Live Sensor Overview', lastUpdated: 'Last updated',
+    deviceStatusTitle: 'Device Status — ESP32',
+    recentAlerts: 'Recent Alerts', viewAll: 'View all',
+    mq2GasSensor: 'MQ-2 Gas Sensor', gasLevelLabel: 'Gas Level', airQualityLabel: 'Air Quality', smokeLabel: 'Smoke',
+    wifiSignalRSSI: 'Wi-Fi Signal (RSSI)',
+    sensorFlame: 'Flame Sensor', sensorPir: 'PIR Motion', sensorVibration: 'Vibration Sensor',
+    sensorRain: 'Rain Sensor', sensorSoil: 'Soil Moisture', sensorDistance: 'Ultrasonic Distance',
+    sensorTemperature: 'Temperature', sensorHumidity: 'Humidity',
+    fireDetected: 'Fire Detected', safe: 'Safe', motion: 'Motion', noMotion: 'No Motion',
+    triggeredStatus: 'Triggered', stableStatus: 'Stable',
+    good: 'Good', moderate: 'Moderate', poor: 'Poor', hazardous: 'Hazardous',
+    detected: 'Detected', clear: 'Clear',
+    fieldIp: 'IP Address', fieldMac: 'MAC Address', fieldFirmware: 'Firmware Version', fieldUptime: 'Uptime',
+    fieldFreeHeap: 'Free Heap Memory', fieldCpu: 'CPU Usage', fieldRssi: 'Wi-Fi RSSI', fieldLastSeen: 'Last Seen',
+    fieldBattery: 'Battery', never: 'never',
+    deviceOnline: 'ESP32 Online', deviceOfflineSince: 'ESP32 Offline (last seen {time})',
+    analyticsTitle: 'Analytics — Real-Time Trends', rollingWindow: 'Rolling live window · updates every 3s',
+    filterToday: 'Today', filter24h: '24 Hours', filter7d: '7 Days', filter30d: '30 Days', filterCustom: 'Custom Range',
+    exportPdf: 'Export PDF', exportCsv: 'Export CSV', exportPng: 'Export PNG',
+    avgTemperatureLive: 'Avg Temperature (Live)', avgHumidity: 'Average Humidity', avgSoilMoisture: 'Average Soil Moisture',
+    avgRainIntensity: 'Average Rain Intensity', avgGasLevel: 'Average Gas Level', motionEventsToday: 'Motion Events Today',
+    fireAlertsToday: 'Fire Alerts Today', deviceUptimePct: 'Device Uptime', systemHealthScore: 'System Health Score',
+    deviceResourceUsage: 'Device Resource Usage', calculationsTitle: 'Calculations',
+    calcNow: 'Now', calcAvg: 'Avg', calcMinMax: 'Min / Max',
+    calcTemperature: 'Temperature', calcHumidity: 'Humidity', calcGasLevel: 'Gas Level', calcSoilMoisture: 'Soil Moisture',
+    calcRainIntensity: 'Rain Intensity', calcDistance: 'Distance',
+    extraRange: 'Range', extraPeak: 'Peak', extraAirQuality: 'Air Quality', extraDryness: 'Dryness', extraDailyAvg: 'Daily Avg',
+    aiInsightsTitle: 'AI Insights',
+    insightSoilDown: 'Soil moisture is decreasing', insightSoilUp: 'Soil moisture is recovering', insightSoilFlat: 'Soil moisture is stable',
+    insightRainUp: 'Rain intensity increasing', insightRainDown: 'Rain intensity decreasing', insightRainFlat: 'Rain intensity steady',
+    insightTempFlat: 'Temperature stable', insightTempTrend: 'Temperature trending {dir}',
+    insightGasHigh: 'Gas level elevated — monitor closely', insightGasNormal: 'Gas level normal',
+    insightMotion: 'Motion detected {n} times today',
+    insightHealth: 'Device health {word} ({score}/100)', healthExcellent: 'excellent', healthFair: 'fair', healthDegraded: 'degraded',
+    trendUp: 'up', trendDown: 'down',
+    resourceCpuUsage: 'CPU Usage', resourceHeapMemory: 'Heap Memory', resourceWifiSignal: 'Wi-Fi Signal',
+    alertSystemTitle: 'Alert System', criticalLabel: 'Critical', warningLabel: 'Warning', infoLabel: 'Info',
+    deviceHealthTitle: 'Device Health — ESP32', cpuUsage: 'CPU USAGE', freeHeap: 'FREE HEAP',
+    settingsTitle: 'Settings',
+    settingPushLabel: 'Push Notifications', settingPushDesc: 'Receive alerts for critical sensor events',
+    settingSoundLabel: 'Sound Alerts', settingSoundDesc: 'Play a tone when a new alert fires',
+    settingAutoRefreshLabel: 'Auto-Refresh Data', settingAutoRefreshDesc: 'Continuously poll sensors in the background',
+    settingCompactLabel: 'Compact Card Layout', settingCompactDesc: 'Reduce padding on sensor cards',
+    sensorRefreshInterval: 'Sensor Refresh Interval', updatingEverySeconds: 'Updating every {n} seconds',
+    backButton: 'Back', howItWorksTitle: 'How This Sensor Works', specsTitle: 'Specifications',
+    currentReadingLabel: 'Current Reading', tapAnySensor: 'Tap any sensor card to see how it works and its live reading in detail.'
+  },
+  ta: {
+    tagline: 'என்ட்ரையாட் ஸ்மார்ட் IoT கண்காணிப்பு டாஷ்போர்டு',
+    navDashboard: 'டாஷ்போர்டு', navLive: 'நேரடி கண்காணிப்பு', navAnalytics: 'பகுப்பாய்வு',
+    navAlerts: 'எச்சரிக்கைகள்', navHealth: 'சாதன ஆரோக்கியம்', navSettings: 'அமைப்புகள்',
+    viewTitleDashboard: 'டாஷ்போர்டு கண்ணோட்டம்', viewTitleLive: 'நேரடி கண்காணிப்பு', viewTitleAnalytics: 'பகுப்பாய்வு',
+    viewTitleAlerts: 'எச்சரிக்கை அமைப்பு', viewTitleHealth: 'சாதன ஆரோக்கியம்', viewTitleSettings: 'அமைப்புகள்',
+    viewTitleSensorDetail: 'சென்சார் விவரங்கள்',
+    adminLabel: 'நிர்வாகி', operatorLabel: 'கணினி இயக்குநர்',
+    notifTitle: 'சமீபத்திய அறிவிப்புகள்',
+    switchToLight: 'லைட் மோடிற்கு மாறு', switchToDark: 'டார்க் மோடிற்கு மாறு', switchLanguage: 'Switch to English',
+    wifiConnected: 'வைஃபை இணைக்கப்பட்டது', wifiUnreachable: 'வைஃபை எட்ட முடியவில்லை',
+    espConnected: 'ESP32 இணைக்கப்பட்டது', espOffline: 'ESP32 ஆஃப்லைன்',
+    liveSensorOverview: 'நேரடி சென்சார் கண்ணோட்டம்', lastUpdated: 'கடைசி புதுப்பிப்பு',
+    deviceStatusTitle: 'சாதன நிலை — ESP32',
+    recentAlerts: 'சமீபத்திய எச்சரிக்கைகள்', viewAll: 'அனைத்தையும் காண்க',
+    mq2GasSensor: 'MQ-2 எரிவாயு சென்சார்', gasLevelLabel: 'எரிவாயு அளவு', airQualityLabel: 'காற்று தரம்', smokeLabel: 'புகை',
+    wifiSignalRSSI: 'வைஃபை சிக்னல் (RSSI)',
+    sensorFlame: 'தீ சென்சார்', sensorPir: 'PIR இயக்க சென்சார்', sensorVibration: 'அதிர்வு சென்சார்',
+    sensorRain: 'மழை சென்சார்', sensorSoil: 'மண் ஈரப்பதம்', sensorDistance: 'அல்ட்ராசோனிக் தூரம்',
+    sensorTemperature: 'வெப்பநிலை', sensorHumidity: 'ஈரப்பதம்',
+    fireDetected: 'தீ கண்டறியப்பட்டது', safe: 'பாதுகாப்பானது', motion: 'இயக்கம்', noMotion: 'இயக்கம் இல்லை',
+    triggeredStatus: 'தூண்டப்பட்டது', stableStatus: 'நிலையானது',
+    good: 'நல்லது', moderate: 'மிதமானது', poor: 'மோசமானது', hazardous: 'ஆபத்தானது',
+    detected: 'கண்டறியப்பட்டது', clear: 'தெளிவானது',
+    fieldIp: 'IP முகவரி', fieldMac: 'MAC முகவரி', fieldFirmware: 'ஃபார்ம்வேர் பதிப்பு', fieldUptime: 'இயங்கிய நேரம்',
+    fieldFreeHeap: 'கிடைக்கும் ஹீப் நினைவகம்', fieldCpu: 'CPU பயன்பாடு', fieldRssi: 'வைஃபை RSSI', fieldLastSeen: 'கடைசியாக பார்க்கப்பட்டது',
+    fieldBattery: 'பேட்டரி', never: 'ஒருபோதும் இல்லை',
+    deviceOnline: 'ESP32 ஆன்லைன்', deviceOfflineSince: 'ESP32 ஆஃப்லைன் (கடைசியாக பார்க்கப்பட்டது {time})',
+    analyticsTitle: 'பகுப்பாய்வு — நேரடி போக்குகள்', rollingWindow: 'நேரடி சுழல் சாளரம் · ஒவ்வொரு 3 வினாடிக்கும் புதுப்பிக்கப்படுகிறது',
+    filterToday: 'இன்று', filter24h: '24 மணி நேரம்', filter7d: '7 நாட்கள்', filter30d: '30 நாட்கள்', filterCustom: 'தனிப்பயன் வரம்பு',
+    exportPdf: 'PDF ஏற்றுமதி', exportCsv: 'CSV ஏற்றுமதி', exportPng: 'PNG ஏற்றுமதி',
+    avgTemperatureLive: 'சராசரி வெப்பநிலை (நேரடி)', avgHumidity: 'சராசரி ஈரப்பதம்', avgSoilMoisture: 'சராசரி மண் ஈரப்பதம்',
+    avgRainIntensity: 'சராசரி மழை தீவிரம்', avgGasLevel: 'சராசரி எரிவாயு அளவு', motionEventsToday: 'இன்றைய இயக்க நிகழ்வுகள்',
+    fireAlertsToday: 'இன்றைய தீ எச்சரிக்கைகள்', deviceUptimePct: 'சாதன இயக்க நேரம்', systemHealthScore: 'கணினி ஆரோக்கிய மதிப்பெண்',
+    deviceResourceUsage: 'சாதன வள பயன்பாடு', calculationsTitle: 'கணக்கீடுகள்',
+    calcNow: 'இப்போது', calcAvg: 'சராசரி', calcMinMax: 'குறை / அதிக',
+    calcTemperature: 'வெப்பநிலை', calcHumidity: 'ஈரப்பதம்', calcGasLevel: 'எரிவாயு அளவு', calcSoilMoisture: 'மண் ஈரப்பதம்',
+    calcRainIntensity: 'மழை தீவிரம்', calcDistance: 'தூரம்',
+    extraRange: 'வரம்பு', extraPeak: 'உச்சம்', extraAirQuality: 'காற்று தரம்', extraDryness: 'உலர்வு', extraDailyAvg: 'தின சராசரி',
+    aiInsightsTitle: 'AI நுண்ணறிவுகள்',
+    insightSoilDown: 'மண் ஈரப்பதம் குறைந்து வருகிறது', insightSoilUp: 'மண் ஈரப்பதம் மீண்டு வருகிறது', insightSoilFlat: 'மண் ஈரப்பதம் நிலையானது',
+    insightRainUp: 'மழை தீவிரம் அதிகரித்து வருகிறது', insightRainDown: 'மழை தீவிரம் குறைந்து வருகிறது', insightRainFlat: 'மழை தீவிரம் நிலையானது',
+    insightTempFlat: 'வெப்பநிலை நிலையானது', insightTempTrend: 'வெப்பநிலை {dir} நோக்கி செல்கிறது',
+    insightGasHigh: 'எரிவாயு அளவு அதிகரித்துள்ளது — கவனமாக கண்காணிக்கவும்', insightGasNormal: 'எரிவாயு அளவு இயல்பானது',
+    insightMotion: 'இன்று {n} முறை இயக்கம் கண்டறியப்பட்டது',
+    insightHealth: 'சாதன ஆரோக்கியம் {word} ({score}/100)', healthExcellent: 'சிறப்பானது', healthFair: 'சரியானது', healthDegraded: 'குறைந்துள்ளது',
+    trendUp: 'அதிகரிக்கும்', trendDown: 'குறையும்',
+    resourceCpuUsage: 'CPU பயன்பாடு', resourceHeapMemory: 'ஹீப் நினைவகம்', resourceWifiSignal: 'வைஃபை சிக்னல்',
+    alertSystemTitle: 'எச்சரிக்கை அமைப்பு', criticalLabel: 'அபாயகரம்', warningLabel: 'எச்சரிக்கை', infoLabel: 'தகவல்',
+    deviceHealthTitle: 'சாதன ஆரோக்கியம் — ESP32', cpuUsage: 'CPU பயன்பாடு', freeHeap: 'கிடைக்கும் ஹீப்',
+    settingsTitle: 'அமைப்புகள்',
+    settingPushLabel: 'புஷ் அறிவிப்புகள்', settingPushDesc: 'முக்கியமான சென்சார் நிகழ்வுகளுக்கான எச்சரிக்கைகளைப் பெறவும்',
+    settingSoundLabel: 'ஒலி எச்சரிக்கைகள்', settingSoundDesc: 'புதிய எச்சரிக்கை வரும்போது ஒலி எழுப்பவும்',
+    settingAutoRefreshLabel: 'தானியங்கி புதுப்பிப்பு', settingAutoRefreshDesc: 'பின்னணியில் தொடர்ந்து சென்சார்களை சரிபார்க்கவும்',
+    settingCompactLabel: 'சுருக்கமான கார்டு தளவமைப்பு', settingCompactDesc: 'சென்சார் கார்டுகளின் இடைவெளியை குறைக்கவும்',
+    sensorRefreshInterval: 'சென்சார் புதுப்பிப்பு இடைவெளி', updatingEverySeconds: 'ஒவ்வொரு {n} வினாடிக்கும் புதுப்பிக்கப்படுகிறது',
+    backButton: 'பின் செல்', howItWorksTitle: 'இந்த சென்சார் எவ்வாறு செயல்படுகிறது', specsTitle: 'விவரக்குறிப்புகள்',
+    currentReadingLabel: 'தற்போதைய அளவீடு', tapAnySensor: 'எந்தவொரு சென்சார் கார்டையும் தட்டி அது எவ்வாறு செயல்படுகிறது என்பதையும் அதன் நேரடி அளவீட்டையும் விரிவாகக் காணவும்.'
+  }
+};
+
+// Sensor "how it works" knowledge base for the per-sensor detail pages
+// (Task: "if we click the tabs it should go to the next page... the second
+// page opens with the information of the sensor with working information —
+// it must be for all sensors tabs"). Static/educational content, not from
+// Firebase — paired at render time with each sensor's live value.
+const SENSOR_INFO = {
+  en: {
+    flame: { howItWorks: 'An IR flame sensor detects the infrared light (roughly 760–1100nm) that a flame radiates. A photodiode tuned to that band outputs a signal the ESP32 reads digitally — a real flame close to the sensor pulls the output low almost instantly, which is why fire alerts fire immediately rather than waiting for the normal sync cycle.', specs: [['Type', 'IR photodiode'], ['Detection angle', '~60°'], ['Range', 'Up to ~1 m (visible flame)'], ['Output', 'Digital (HIGH/LOW)']] },
+    pir: { howItWorks: 'A PIR (Passive InfraRed) sensor has two slots sensitive to infrared. A warm body — a person or animal — moving across the sensor\'s field of view changes the difference between the two slots, which the sensor reports as motion. It only detects moving heat sources, not stationary ones.', specs: [['Type', 'Passive infrared'], ['Detection angle', '~110°'], ['Range', 'Up to ~7 m'], ['Output', 'Digital (motion / no motion)']] },
+    vibration: { howItWorks: 'The SW-420 vibration sensor uses a small spring suspended inside a metal tube. Mechanical shock or vibration briefly closes the circuit between the spring and the tube wall, which the ESP32 reads as a trigger. It responds to physical shock, not sound.', specs: [['Type', 'Spring-based mechanical switch'], ['Sensitivity', 'Adjustable (onboard potentiometer)'], ['Output', 'Digital (stable / triggered)']] },
+    rain: { howItWorks: 'A resistive rain sensor is a exposed PCB grid: dry, it has very high resistance; water bridging the grid lowers that resistance. The ESP32 reads the analog voltage this produces and normalizes it to a 0–100% intensity — a low reading means dry, a high reading means water is present.', specs: [['Type', 'Resistive PCB grid'], ['Output', 'Analog, normalized 0–100%'], ['Note', 'Corrodes over long-term outdoor exposure']] },
+    soil: { howItWorks: 'A capacitive or resistive soil probe measures how well the soil around it conducts (or how it changes the sensor\'s capacitance) — wetter soil conducts more/changes capacitance more than dry soil. The ESP32 converts that raw reading into a 0–100% moisture percentage.', specs: [['Type', 'Capacitive/resistive probe'], ['Output', 'Analog, normalized 0–100%'], ['Placement', 'Inserted directly into soil near the root zone']] },
+    distance: { howItWorks: 'The HC-SR04 ultrasonic sensor emits a burst of 40kHz sound above human hearing, then times how long the echo takes to bounce back off the nearest object. Distance = (time × speed of sound) ÷ 2. It\'s used here to watch a door, gate, or water level.', specs: [['Type', 'Ultrasonic time-of-flight'], ['Range', '2 cm – 400 cm'], ['Accuracy', '~±0.3 cm'], ['Beam angle', '~15°']] },
+    temperature: { howItWorks: 'The DHT11 combines a thermistor (a resistor whose resistance changes with temperature) with an onboard chip that converts that reading into a calibrated digital value sent over a single wire — no analog-to-digital conversion needed on the ESP32 side.', specs: [['Type', 'Thermistor + digital output (DHT11)'], ['Range', '0–50°C'], ['Accuracy', '±2°C'], ['Sample rate', '~1 reading/second max']] },
+    humidity: { howItWorks: 'The same DHT11 module has a capacitive humidity element alongside its thermistor: a moisture-absorbing film changes the sensor\'s capacitance as ambient humidity changes, and the onboard chip reports both temperature and humidity together over one digital line.', specs: [['Type', 'Capacitive humidity + digital output (DHT11)'], ['Range', '20–90% RH'], ['Accuracy', '±5% RH'], ['Sample rate', '~1 reading/second max']] },
+    gas: { howItWorks: 'The MQ-2 is a metal-oxide semiconductor (MOS) sensor: its sensing element\'s electrical resistance drops when combustible gases (LPG, smoke, propane, methane) are present in the air around it. The ESP32 reads that as an analog voltage and normalizes it to the 0–1000 scale shown here — the same physical sensor is used for both the gas-leak and smoke readings.', specs: [['Type', 'Metal-oxide semiconductor (MOS)'], ['Detects', 'LPG, smoke, propane, methane, butane'], ['Output', 'Analog, normalized 0–1000'], ['Warm-up', 'Needs a short warm-up period after power-on for stable readings']] },
+    wifi: { howItWorks: 'RSSI (Received Signal Strength Indicator) is reported directly by the ESP32\'s WiFi radio — it measures how strong the signal from your router is at the device\'s location, in dBm. It\'s a negative number where values closer to 0 mean a stronger signal (e.g. -50 dBm is excellent, -80 dBm is weak).', specs: [['Type', 'Radio signal strength (built into ESP32)'], ['Unit', 'dBm (typically -30 to -90)'], ['Good signal', 'Above -60 dBm'], ['Weak signal', 'Below -75 dBm']] }
+  },
+  ta: {
+    flame: { howItWorks: 'IR தீ சென்சார், தீயிலிருந்து வெளிப்படும் அகச்சிவப்பு ஒளியை (சுமார் 760–1100nm) கண்டறிகிறது. அந்த அலைவரிசைக்கு ஏற்ற ஒரு ஃபோட்டோடையோட் ESP32 படிக்கும் சிக்னலை வெளியிடுகிறது — சென்சாருக்கு அருகில் உண்மையான தீ இருந்தால் உடனடியாக வெளியீடு குறையும், அதனால்தான் தீ எச்சரிக்கைகள் வழக்கமான ஒத்திசைவு சுழற்சிக்காக காத்திராமல் உடனடியாக அனுப்பப்படுகின்றன.', specs: [['வகை', 'IR ஃபோட்டோடையோட்'], ['கண்டறியும் கோணம்', '~60°'], ['வரம்பு', '~1 மீ வரை (தெரியும் தீ)'], ['வெளியீடு', 'டிஜிட்டல் (HIGH/LOW)']] },
+    pir: { howItWorks: 'PIR (செயலற்ற அகச்சிவப்பு) சென்சாரில் அகச்சிவப்புக்கு உணர்திறன் கொண்ட இரண்டு பகுதிகள் உள்ளன. ஒரு நபர் அல்லது விலங்கு போன்ற வெப்பமான உடல் சென்சாரின் பார்வைப் புலத்தில் நகரும்போது, அந்த இரு பகுதிகளுக்கும் இடையிலான வேறுபாடு மாறுகிறது, அதை சென்சார் இயக்கமாக அறிவிக்கிறது. நகரும் வெப்ப மூலங்களை மட்டுமே இது கண்டறியும்.', specs: [['வகை', 'செயலற்ற அகச்சிவப்பு'], ['கண்டறியும் கோணம்', '~110°'], ['வரம்பு', '~7 மீ வரை'], ['வெளியீடு', 'டிஜிட்டல் (இயக்கம் / இயக்கம் இல்லை)']] },
+    vibration: { howItWorks: 'SW-420 அதிர்வு சென்சார் ஒரு உலோகக் குழாய்க்குள் தொங்கும் சிறிய ஸ்பிரிங்கைப் பயன்படுத்துகிறது. இயந்திர அதிர்ச்சி அல்லது அதிர்வு, ஸ்பிரிங்கிற்கும் குழாய் சுவருக்கும் இடையிலான சுற்றுவட்டத்தை சிறிது நேரம் மூடுகிறது, அதை ESP32 ஒரு தூண்டுதலாகப் படிக்கிறது. இது ஒலிக்கு அல்ல, உடல் அதிர்ச்சிக்கே பதிலளிக்கிறது.', specs: [['வகை', 'ஸ்பிரிங் அடிப்படையிலான இயந்திர சுவிட்ச்'], ['உணர்திறன்', 'சரிசெய்யக்கூடியது (ஆன்போர்டு பொட்டென்ஷியோமீட்டர்)'], ['வெளியீடு', 'டிஜிட்டல் (நிலையானது / தூண்டப்பட்டது)']] },
+    rain: { howItWorks: 'ரெசிஸ்டிவ் மழை சென்சார் ஒரு திறந்த PCB கட்டமைப்பு: உலர்ந்திருக்கும்போது அதிக மின்தடை இருக்கும்; தண்ணீர் கட்டமைப்பை இணைக்கும்போது மின்தடை குறையும். ESP32 இதனால் உருவாகும் அனலாக் மின்னழுத்தத்தைப் படித்து 0–100% தீவிரமாக மாற்றுகிறது — குறைந்த மதிப்பு உலர்வையும், அதிக மதிப்பு தண்ணீர் இருப்பதையும் குறிக்கும்.', specs: [['வகை', 'ரெசிஸ்டிவ் PCB கட்டமைப்பு'], ['வெளியீடு', 'அனலாக், 0–100% ஆக மாற்றப்பட்டது'], ['குறிப்பு', 'நீண்டகால வெளிப்புற வெளிப்பாட்டில் அரிக்கும்']] },
+    soil: { howItWorks: 'கேபாசிட்டிவ் அல்லது ரெசிஸ்டிவ் மண் பரிசோதனை, அதைச் சுற்றியுள்ள மண் எவ்வளவு நன்றாக மின்சாரத்தைக் கடத்துகிறது (அல்லது சென்சாரின் கேபாசிட்டன்ஸை எவ்வாறு மாற்றுகிறது) என்பதை அளவிடுகிறது — ஈரமான மண் உலர்ந்த மண்ணை விட அதிகமாக கடத்தும். ESP32 அந்த மூலப் பதிவை 0–100% ஈரப்பத சதவீதமாக மாற்றுகிறது.', specs: [['வகை', 'கேபாசிட்டிவ்/ரெசிஸ்டிவ் பரிசோதனை'], ['வெளியீடு', 'அனலாக், 0–100% ஆக மாற்றப்பட்டது'], ['வைப்பிடம்', 'வேர் மண்டலத்திற்கு அருகில் மண்ணில் நேரடியாக செருகப்படுகிறது']] },
+    distance: { howItWorks: 'HC-SR04 அல்ட்ராசோனிக் சென்சார், மனிதக் காதுக்கு கேட்காத 40kHz ஒலி அலையை வெளியிட்டு, அது அருகிலுள்ள பொருளில் மோதி எதிரொலியாக திரும்ப வர எடுக்கும் நேரத்தை அளவிடுகிறது. தூரம் = (நேரம் × ஒலியின் வேகம்) ÷ 2. கதவு, வாயில் அல்லது நீர் மட்டத்தைக் கண்காணிக்க இது பயன்படுகிறது.', specs: [['வகை', 'அல்ட்ராசோனிக் நேர-பறப்பு'], ['வரம்பு', '2 செமீ – 400 செமீ'], ['துல்லியம்', '~±0.3 செமீ'], ['கற்றை கோணம்', '~15°']] },
+    temperature: { howItWorks: 'DHT11, வெப்பநிலைக்கு ஏற்ப மின்தடை மாறும் தெர்மிஸ்டரையும், அந்த மதிப்பை ஒரே கம்பி வழியாக அனுப்பப்படும் அளவீடு செய்யப்பட்ட டிஜிட்டல் மதிப்பாக மாற்றும் சிப்பையும் ஒருங்கிணைக்கிறது — ESP32 பக்கத்தில் அனலாக்-டு-டிஜிட்டல் மாற்றம் தேவையில்லை.', specs: [['வகை', 'தெர்மிஸ்டர் + டிஜிட்டல் வெளியீடு (DHT11)'], ['வரம்பு', '0–50°C'], ['துல்லியம்', '±2°C'], ['மாதிரி விகிதம்', 'அதிகபட்சம் ~1 வினாடிக்கு 1 அளவீடு']] },
+    humidity: { howItWorks: 'அதே DHT11 மாட்யூலில் தெர்மிஸ்டருடன் சேர்ந்து ஒரு கேபாசிட்டிவ் ஈரப்பத உறுப்பு உள்ளது: சுற்றுப்புற ஈரப்பதம் மாறும்போது ஈரப்பதத்தை உறிஞ்சும் படலம் சென்சாரின் கேபாசிட்டன்ஸை மாற்றுகிறது, ஆன்போர்டு சிப் வெப்பநிலை மற்றும் ஈரப்பதம் இரண்டையும் ஒரே டிஜிட்டல் கோட்டில் அறிவிக்கிறது.', specs: [['வகை', 'கேபாசிட்டிவ் ஈரப்பதம் + டிஜிட்டல் வெளியீடு (DHT11)'], ['வரம்பு', '20–90% RH'], ['துல்லியம்', '±5% RH'], ['மாதிரி விகிதம்', 'அதிகபட்சம் ~1 வினாடிக்கு 1 அளவீடு']] },
+    gas: { howItWorks: 'MQ-2 ஒரு உலோக-ஆக்சைடு அரைக்கடத்தி (MOS) சென்சார்: எரியக்கூடிய வாயுக்கள் (LPG, புகை, ப்ரோபேன், மீத்தேன்) சுற்றுப்புற காற்றில் இருக்கும்போது அதன் உணரும் பகுதியின் மின்தடை குறைகிறது. ESP32 அதை அனலாக் மின்னழுத்தமாகப் படித்து இங்கே காட்டப்படும் 0–1000 அளவீட்டிற்கு மாற்றுகிறது — எரிவாயு கசிவு மற்றும் புகை அளவீடு இரண்டிற்கும் ஒரே சென்சார்தான் பயன்படுத்தப்படுகிறது.', specs: [['வகை', 'உலோக-ஆக்சைடு அரைக்கடத்தி (MOS)'], ['கண்டறியும்', 'LPG, புகை, ப்ரோபேன், மீத்தேன், பியூட்டேன்'], ['வெளியீடு', 'அனலாக், 0–1000 ஆக மாற்றப்பட்டது'], ['தொடக்க நேரம்', 'நிலையான அளவீட்டிற்கு மின் இணைப்புக்குப் பிறகு சிறிது நேரம் தேவை']] },
+    wifi: { howItWorks: 'RSSI (பெறப்பட்ட சிக்னல் வலிமை குறிகாட்டி) ESP32-ன் வைஃபை ரேடியோவால் நேரடியாக அறிவிக்கப்படுகிறது — சாதனத்தின் இருப்பிடத்தில் உங்கள் ரூட்டரிலிருந்து சிக்னல் எவ்வளவு வலுவாக உள்ளது என்பதை dBm இல் அளவிடுகிறது. இது ஒரு எதிர்மறை எண்; 0-க்கு நெருக்கமான மதிப்புகள் வலுவான சிக்னலைக் குறிக்கும் (எ.கா. -50 dBm சிறப்பானது, -80 dBm பலவீனமானது).', specs: [['வகை', 'ரேடியோ சிக்னல் வலிமை (ESP32-க்குள் உள்ளது)'], ['அலகு', 'dBm (பொதுவாக -30 முதல் -90 வரை)'], ['நல்ல சிக்னல்', '-60 dBm க்கு மேல்'], ['பலவீனமான சிக்னல்', '-75 dBm க்குக் கீழ்']] }
+  }
+};
+
 class Component extends DCLogic {
   threeCanvasRef = React.createRef();
+  sparkCanvasRef = React.createRef();
   tickCount = 0;
 
   state = {
@@ -477,7 +763,14 @@ class Component extends DCLogic {
     filterRange: '24h',
     displayed: { avgTemp: 0, avgHumidity: 0, avgSoil: 0, avgRain: 0, avgGas: 0, motionToday: 0, fireToday: 0, uptimePct: 100, healthScore: 100 },
     // Populated live from devices/{deviceId}/alerts — never written to locally.
-    alerts: []
+    alerts: [],
+
+    // ---- UI/UX state (this revision) ----
+    theme: 'dark',            // 'dark' | 'light' — toggled by toggleTheme(), see the CSS vars in <style>
+    lang: 'en',                // 'en' | 'ta' — toggled by toggleLang(), see I18N below
+    mobileNavOpen: false,      // sidebar drawer, <=860px only (see .app-aside CSS)
+    selectedSensor: null,      // which sensor's detail page is showing when activeView === 'sensorDetail'
+    transitioning: false       // true while the spark transition canvas is animating (see navigate())
   };
 
   // How long status/lastSeen can go stale before we call the device
@@ -516,7 +809,7 @@ class Component extends DCLogic {
 
     this._unsubSensors = api.onSensors((sensors) => this.applySensorUpdate(sensors));
     this._unsubController = api.onController((deviceId, controller) => this.applyController(deviceId, controller));
-    this._unsubAlerts = api.onAlerts((alerts) => this.setState({ alerts }));
+    this._unsubAlerts = api.onAlerts((alerts) => this.setState({ alerts: (alerts || []).map(a => this.decorateAlert(a)) }));
 
     // Seed today's rolling history from real hourly telemetry rollups so
     // charts have real data immediately, instead of starting empty.
@@ -629,10 +922,175 @@ class Component extends DCLogic {
   componentWillUnmount() {
     clearInterval(this.clockTimer);
     if (this._raf) cancelAnimationFrame(this._raf);
+    if (this._sparkRaf) cancelAnimationFrame(this._sparkRaf);
     window.removeEventListener('resize', this._resize);
     if (this._unsubSensors) this._unsubSensors();
     if (this._unsubController) this._unsubController();
     if (this._unsubAlerts) this._unsubAlerts();
+  }
+
+  // Firebase writes the raw alert shape { id, type, message, ts }. The UI
+  // needs a level (CRITICAL/WARNING/INFO), a color, an icon, and a `t` field
+  // (timeAgo()/countAlertsToday()/bucketAlerts() all read `t`, not `ts`) —
+  // none of which existed before, which silently produced "NaN ago" rows
+  // with no color/icon/level. This is computed once per alert, here, so the
+  // template and every helper above can just read the decorated fields.
+  decorateAlert(a) {
+    const type = a.type || 'info';
+    const criticalTypes = ['fire', 'smoke', 'gas-critical'];
+    const warningTypes = ['motion', 'vibration', 'rain', 'gas-warning', 'wifi', 'offline'];
+    const level = criticalTypes.includes(type) ? 'CRITICAL' : warningTypes.includes(type) ? 'WARNING' : 'INFO';
+    const color = level === 'CRITICAL' ? RED : level === 'WARNING' ? AMBER : BLUE;
+    const iconMap = { fire: '🔥', smoke: '💨', motion: '🚶', vibration: '📳', rain: '🌧', soil: '🌱', gas: '💨', 'gas-critical': '💨', 'gas-warning': '💨', wifi: '📶', offline: '⚠️' };
+    return { ...a, level, color, icon: iconMap[type] || 'ℹ️', t: typeof a.t === 'number' ? a.t : a.ts };
+  }
+
+  // ---- Theme / language / mobile nav ----------------------------------
+
+  toggleTheme() {
+    this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }));
+  }
+
+  toggleLang() {
+    this.setState(st => ({ lang: st.lang === 'en' ? 'ta' : 'en' }));
+  }
+
+  toggleMobileNav() {
+    this.setState(st => ({ mobileNavOpen: !st.mobileNavOpen }));
+  }
+
+  closeMobileNav() {
+    this.setState({ mobileNavOpen: false });
+  }
+
+  // ---- Tab / sensor-card navigation with the electric-spark transition ----
+  // kind === 'view'   -> switches the sidebar tab (id is a sidebarDefs id)
+  // kind === 'sensor' -> opens the per-sensor detail page for sensor `id`
+  navigate(kind, id) {
+    if (this.state.transitioning) return; // ignore taps while a transition is already playing
+    this.setState({ transitioning: true, mobileNavOpen: false });
+    this.playSpark(() => {
+      if (kind === 'sensor') this.setState({ activeView: 'sensorDetail', selectedSensor: id });
+      else this.setState({ activeView: id, selectedSensor: null });
+    });
+  }
+
+  // Recursive midpoint-displacement fractal bolt: gives a jagged, natural
+  // lightning silhouette instead of a straight line. Halving the
+  // displacement each recursion (the classic "plasma fractal" approach) is
+  // what makes deeper segments look progressively finer/more electric.
+  generateBoltPath(x1, y1, x2, y2, displace, depth) {
+    if (depth <= 0 || displace < 3) return [[x1, y1], [x2, y2]];
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * displace;
+    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * displace;
+    const left = this.generateBoltPath(x1, y1, mx, my, displace / 1.8, depth - 1);
+    const right = this.generateBoltPath(mx, my, x2, y2, displace / 1.8, depth - 1);
+    return [...left.slice(0, -1), ...right];
+  }
+
+  // Plays a realistic electric-spark transition on the always-mounted
+  // full-screen canvas (see sparkCanvasRef in the template), then calls
+  // onPeak() at the flash's brightest moment to swap the actual view
+  // underneath — the swap happens while the screen is white-hot, so it's
+  // invisible, avoiding any jank from driving this at 60fps through React
+  // state. Driven imperatively via requestAnimationFrame + canvas 2D calls;
+  // the ONLY setState() calls in the whole sequence are the one that starts
+  // it and the one at the very end that clears `transitioning`.
+  playSpark(onPeak) {
+    const canvas = this.sparkCanvasRef.current;
+    if (!canvas) { onPeak(); this.setState({ transitioning: false }); return; }
+    const ctx = canvas.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth, h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Main bolt travels edge-to-edge (mimics the "passing through the
+    // page" motion asked for) with a handful of forked branch bolts, the
+    // same silhouette as the reference lightning photo.
+    const y1 = h * (0.3 + Math.random() * 0.35), y2 = h * (0.3 + Math.random() * 0.35);
+    const mainPts = this.generateBoltPath(-30, y1, w + 30, y2, h * 0.24, 7);
+    const branches = [];
+    const branchCount = 3 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < branchCount; i++) {
+      const idx = 2 + Math.floor(Math.random() * Math.max(1, mainPts.length - 4));
+      const [bx, by] = mainPts[idx];
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      const bx2 = bx + (70 + Math.random() * 160) * dir;
+      const by2 = by + (h * 0.1 + Math.random() * h * 0.16) * (Math.random() < 0.5 ? -1 : 1);
+      branches.push(this.generateBoltPath(bx, by, bx2, by2, 44, 4));
+    }
+
+    const drawBolt = (pts, alpha, coreWidth, glowWidth) => {
+      if (pts.length < 2) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = '#7dd3fc';
+      ctx.shadowBlur = 28;
+      ctx.strokeStyle = '#bfe9ff';
+      ctx.lineWidth = glowWidth;
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+      ctx.stroke();
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = coreWidth;
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    canvas.style.opacity = '1';
+    const start = performance.now();
+    const FLASH_IN = 90, GROW = 150, PEAK_HOLD = 70, FADE = 260;
+    const TOTAL = FLASH_IN + GROW + PEAK_HOLD + FADE;
+    let peaked = false;
+
+    const frame = (now) => {
+      const t = now - start;
+      ctx.clearRect(0, 0, w, h);
+
+      if (t < FLASH_IN) {
+        const p = t / FLASH_IN;
+        ctx.fillStyle = `rgba(4,10,20,${0.5 * p})`;
+        ctx.fillRect(0, 0, w, h);
+      } else if (t < FLASH_IN + GROW) {
+        const p = (t - FLASH_IN) / GROW;
+        ctx.fillStyle = 'rgba(4,10,20,0.5)';
+        ctx.fillRect(0, 0, w, h);
+        const count = Math.max(2, Math.floor(mainPts.length * p));
+        drawBolt(mainPts.slice(0, count), 1, 3, 14);
+        branches.forEach((b, i) => {
+          const bp = clamp((p - i * 0.08) * 1.6, 0, 1);
+          if (bp > 0) drawBolt(b.slice(0, Math.max(2, Math.floor(b.length * bp))), 0.85 * bp, 2, 9);
+        });
+        if (p > 0.72 && !peaked) { peaked = true; onPeak(); }
+      } else if (t < FLASH_IN + GROW + PEAK_HOLD) {
+        const p = (t - FLASH_IN - GROW) / PEAK_HOLD;
+        ctx.fillStyle = `rgba(255,255,255,${0.85 * (1 - p * 0.3)})`;
+        ctx.fillRect(0, 0, w, h);
+        drawBolt(mainPts, 1, 4, 16);
+        branches.forEach(b => drawBolt(b, 0.9, 2, 10));
+        if (!peaked) { peaked = true; onPeak(); }
+      } else if (t < TOTAL) {
+        const p = (t - FLASH_IN - GROW - PEAK_HOLD) / FADE;
+        ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - p)})`;
+        ctx.fillRect(0, 0, w, h);
+        drawBolt(mainPts, 1 - p, 3, 14 * (1 - p * 0.5));
+        branches.forEach(b => drawBolt(b, (1 - p) * 0.8, 2, 8));
+      } else {
+        ctx.clearRect(0, 0, w, h);
+        canvas.style.opacity = '0';
+        this.setState({ transitioning: false });
+        return;
+      }
+      this._sparkRaf = requestAnimationFrame(frame);
+    };
+    this._sparkRaf = requestAnimationFrame(frame);
   }
 
   tick() {
@@ -848,14 +1306,17 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const view = s.activeView;
+    const L = I18N[s.lang] || I18N.en;
+    const SI = SENSOR_INFO[s.lang] || SENSOR_INFO.en;
+
     const sidebarDefs = [
-      { id: 'dashboard', label: 'Dashboard' }, { id: 'live', label: 'Live Monitoring' },
-      { id: 'analytics', label: 'Analytics' }, { id: 'alerts', label: 'Alerts' },
-      { id: 'health', label: 'Device Health' }, { id: 'settings', label: 'Settings' }
+      { id: 'dashboard', label: L.navDashboard }, { id: 'live', label: L.navLive },
+      { id: 'analytics', label: L.navAnalytics }, { id: 'alerts', label: L.navAlerts },
+      { id: 'health', label: L.navHealth }, { id: 'settings', label: L.navSettings }
     ];
     const sidebarItems = sidebarDefs.map(it => {
       const active = it.id === view;
-      return { ...it, select: () => this.setState({ activeView: it.id }), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
+      return { ...it, select: () => this.navigate('view', it.id), dotColor: active ? BLUE : SLATE, dotShadow: active ? `0 0 8px ${rgba(BLUE, 0.8)}` : 'none', weight: active ? 600 : 400, textColor: active ? '#f1f5f9' : '#94a3b8' };
     });
 
     const flameColor = s.flame === 'fire' ? RED : GREEN;
@@ -869,18 +1330,19 @@ class Component extends DCLogic {
 
     const card = (id, icon, label, color, valueText, isGauge, percent) => ({
       id, icon, label, statusColor: color, borderColor: rgba(color, 0.35), glow: rgba(color, 0.25),
-      valueText, isGauge, isBinary: !isGauge, percent: percent ?? 0
+      valueText, isGauge, isBinary: !isGauge, percent: percent ?? 0,
+      open: () => this.navigate('sensor', id)
     });
 
     const sensorCards = [
-      card('flame', '🔥', 'Flame Sensor', flameColor, s.flame === 'fire' ? 'Fire Detected' : 'Safe', false),
-      card('pir', '🚶', 'PIR Motion', pirColor, s.pir === 'motion' ? 'Motion' : 'No Motion', false),
-      card('vibration', '📳', 'Vibration Sensor', vibColor, s.vibration === 'triggered' ? 'Triggered' : 'Stable', false),
-      card('rain', '🌧', 'Rain Sensor', rainColor, `${Math.round(s.rain)}%`, true, Math.round(s.rain)),
-      card('soil', '🌱', 'Soil Moisture', soilColor, `${Math.round(s.soil)}%`, true, Math.round(s.soil)),
-      card('distance', '📏', 'Ultrasonic Distance', distColor, `${Math.round(s.distance)} cm`, false),
-      card('temperature', '🌡', 'Temperature', tempColor, `${s.temperature.toFixed(1)}°C`, false),
-      card('humidity', '💧', 'Humidity', humColor, `${Math.round(s.humidity)}%`, true, Math.round(s.humidity))
+      card('flame', '🔥', L.sensorFlame, flameColor, s.flame === 'fire' ? L.fireDetected : L.safe, false),
+      card('pir', '🚶', L.sensorPir, pirColor, s.pir === 'motion' ? L.motion : L.noMotion, false),
+      card('vibration', '📳', L.sensorVibration, vibColor, s.vibration === 'triggered' ? L.triggeredStatus : L.stableStatus, false),
+      card('rain', '🌧', L.sensorRain, rainColor, `${Math.round(s.rain)}%`, true, Math.round(s.rain)),
+      card('soil', '🌱', L.sensorSoil, soilColor, `${Math.round(s.soil)}%`, true, Math.round(s.soil)),
+      card('distance', '📏', L.sensorDistance, distColor, `${Math.round(s.distance)} cm`, false),
+      card('temperature', '🌡', L.sensorTemperature, tempColor, `${s.temperature.toFixed(1)}°C`, false),
+      card('humidity', '💧', L.sensorHumidity, humColor, `${Math.round(s.humidity)}%`, true, Math.round(s.humidity))
     ];
 
     const gasLevelColor = s.gasLevel > 600 ? RED : s.gasLevel > 350 ? AMBER : GREEN;
@@ -896,12 +1358,12 @@ class Component extends DCLogic {
     const cpuColor = s.cpu > 70 ? RED : s.cpu > 50 ? AMBER : BLUE;
 
     const deviceFields = [
-      { label: 'IP Address', value: s.ip }, { label: 'MAC Address', value: s.mac },
-      { label: 'Firmware Version', value: s.firmware }, { label: 'Uptime', value: this.formatUptime(s.uptimeSec) },
-      { label: 'Free Heap Memory', value: `${s.heapKB} KB` }, { label: 'CPU Usage', value: `${s.cpu}%` },
-      { label: 'Wi-Fi RSSI', value: `${s.wifiRSSI} dBm` },
-      { label: 'Last Seen', value: s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : 'never' },
-      ...(s.battery !== null ? [{ label: 'Battery', value: `${s.battery}%` }] : [])
+      { label: L.fieldIp, value: s.ip }, { label: L.fieldMac, value: s.mac },
+      { label: L.fieldFirmware, value: s.firmware }, { label: L.fieldUptime, value: this.formatUptime(s.uptimeSec) },
+      { label: L.fieldFreeHeap, value: `${s.heapKB} KB` }, { label: L.fieldCpu, value: `${s.cpu}%` },
+      { label: L.fieldRssi, value: `${s.wifiRSSI} dBm` },
+      { label: L.fieldLastSeen, value: s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : L.never },
+      ...(s.battery !== null ? [{ label: L.fieldBattery, value: `${s.battery}%` }] : [])
     ];
 
     const alerts = s.alerts.map(a => ({ ...a, time: this.timeAgo(a.t) }));
@@ -910,25 +1372,25 @@ class Component extends DCLogic {
     const infoCount = alerts.filter(a => a.level === 'INFO').length;
 
     const settingsDefs = [
-      { key: 'push', label: 'Push Notifications', desc: 'Receive alerts for critical sensor events' },
-      { key: 'sound', label: 'Sound Alerts', desc: 'Play a tone when a new alert fires' },
-      { key: 'autoRefresh', label: 'Auto-Refresh Data', desc: 'Continuously poll sensors in the background' },
-      { key: 'compact', label: 'Compact Card Layout', desc: 'Reduce padding on sensor cards' }
+      { key: 'push', label: L.settingPushLabel, desc: L.settingPushDesc },
+      { key: 'sound', label: L.settingSoundLabel, desc: L.settingSoundDesc },
+      { key: 'autoRefresh', label: L.settingAutoRefreshLabel, desc: L.settingAutoRefreshDesc },
+      { key: 'compact', label: L.settingCompactLabel, desc: L.settingCompactDesc }
     ];
     const settingsToggles = settingsDefs.map(d => {
       const on = s.settings[d.key];
       return { ...d, trackColor: on ? rgba(BLUE, 0.55) : 'rgba(148,163,184,0.18)', knobPos: on ? 23 : 3, toggle: () => this.setState(st => ({ settings: { ...st.settings, [d.key]: !st.settings[d.key] } })) };
     });
 
-    const viewTitles = { dashboard: 'Dashboard Overview', live: 'Live Monitoring', analytics: 'Analytics', alerts: 'Alert System', health: 'Device Health', settings: 'Settings' };
+    const viewTitles = { dashboard: L.viewTitleDashboard, live: L.viewTitleLive, analytics: L.viewTitleAnalytics, alerts: L.viewTitleAlerts, health: L.viewTitleHealth, settings: L.viewTitleSettings, sensorDetail: L.viewTitleSensorDetail };
 
     const notifCount = Math.max(0, s.alerts.length - s.notifRead);
 
     // ---- Analytics module: filters, summary cards, calculations, insights ----
 
     const filterDefs = [
-      { id: 'today', label: 'Today' }, { id: '24h', label: '24 Hours' }, { id: '7d', label: '7 Days' },
-      { id: '30d', label: '30 Days' }, { id: 'custom', label: 'Custom Range' }
+      { id: 'today', label: L.filterToday }, { id: '24h', label: L.filter24h }, { id: '7d', label: L.filter7d },
+      { id: '30d', label: L.filter30d }, { id: 'custom', label: L.filterCustom }
     ];
     const filterOptions = filterDefs.map(f => {
       const active = f.id === s.filterRange;
@@ -938,15 +1400,15 @@ class Component extends DCLogic {
     const tTemp = this.trendOf(s.history.temp), tHum = this.trendOf(s.history.humidity), tSoil = this.trendOf(s.history.soil), tRain = this.trendOf(s.history.rain), tGas = this.trendOf(s.history.gas);
     const arrow = d => d === 'up' ? '↑' : d === 'down' ? '↓' : '→';
     const summaryDefs = [
-      { id: 'avgTemp', icon: '🌡', label: 'Avg Temperature (Live)', value: s.displayed.avgTemp.toFixed(1), unit: '°C', arr: s.history.temp, trend: tTemp, goodDir: 'flat' },
-      { id: 'avgHumidity', icon: '💧', label: 'Average Humidity', value: String(s.displayed.avgHumidity), unit: '%', arr: s.history.humidity, trend: tHum, goodDir: 'flat' },
-      { id: 'avgSoil', icon: '🌱', label: 'Average Soil Moisture', value: String(s.displayed.avgSoil), unit: '%', arr: s.history.soil, trend: tSoil, goodDir: 'up' },
-      { id: 'avgRain', icon: '🌧', label: 'Average Rain Intensity', value: String(s.displayed.avgRain), unit: '%', arr: s.history.rain, trend: tRain, goodDir: 'down' },
-      { id: 'avgGas', icon: '💨', label: 'Average Gas Level', value: String(s.displayed.avgGas), unit: 'ppm', arr: s.history.gas, trend: tGas, goodDir: 'down' },
-      { id: 'motion', icon: '🚶', label: 'Motion Events Today', value: String(s.displayed.motionToday), unit: '', arr: this.bucketAlerts('motion', 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
-      { id: 'fire', icon: '🔥', label: 'Fire Alerts Today', value: String(s.displayed.fireToday), unit: '', arr: this.bucketAlerts(['fire', 'smoke'], 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
-      { id: 'uptime', icon: '', label: 'Device Uptime', value: s.displayed.uptimePct.toFixed(1), unit: '%', arr: [s.displayed.uptimePct, s.displayed.uptimePct], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
-      { id: 'health', icon: '', label: 'System Health Score', value: String(s.displayed.healthScore), unit: '/100', arr: [s.displayed.healthScore, s.displayed.healthScore], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' }
+      { id: 'avgTemp', icon: '🌡', label: L.avgTemperatureLive, value: s.displayed.avgTemp.toFixed(1), unit: '°C', arr: s.history.temp, trend: tTemp, goodDir: 'flat' },
+      { id: 'avgHumidity', icon: '💧', label: L.avgHumidity, value: String(s.displayed.avgHumidity), unit: '%', arr: s.history.humidity, trend: tHum, goodDir: 'flat' },
+      { id: 'avgSoil', icon: '🌱', label: L.avgSoilMoisture, value: String(s.displayed.avgSoil), unit: '%', arr: s.history.soil, trend: tSoil, goodDir: 'up' },
+      { id: 'avgRain', icon: '🌧', label: L.avgRainIntensity, value: String(s.displayed.avgRain), unit: '%', arr: s.history.rain, trend: tRain, goodDir: 'down' },
+      { id: 'avgGas', icon: '💨', label: L.avgGasLevel, value: String(s.displayed.avgGas), unit: 'ppm', arr: s.history.gas, trend: tGas, goodDir: 'down' },
+      { id: 'motion', icon: '🚶', label: L.motionEventsToday, value: String(s.displayed.motionToday), unit: '', arr: this.bucketAlerts('motion', 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'fire', icon: '🔥', label: L.fireAlertsToday, value: String(s.displayed.fireToday), unit: '', arr: this.bucketAlerts(['fire', 'smoke'], 12), trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'uptime', icon: '', label: L.deviceUptimePct, value: s.displayed.uptimePct.toFixed(1), unit: '%', arr: [s.displayed.uptimePct, s.displayed.uptimePct], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' },
+      { id: 'health', icon: '', label: L.systemHealthScore, value: String(s.displayed.healthScore), unit: '/100', arr: [s.displayed.healthScore, s.displayed.healthScore], trend: { dir: 'flat', pct: 0 }, goodDir: 'flat' }
     ];
     const summaryCards = summaryDefs.map(d => {
       let trendColor = SLATE;
@@ -959,59 +1421,107 @@ class Component extends DCLogic {
 
     const statTemp = this.computeStats(s.history.temp), statHum = this.computeStats(s.history.humidity), statGas = this.computeStats(s.history.gas);
     const statSoil = this.computeStats(s.history.soil), statRain = this.computeStats(s.history.rain), statDist = this.computeStats(s.history.distance);
-    const aqi = statGas.avg < 200 ? 'Good' : statGas.avg < 400 ? 'Moderate' : statGas.avg < 600 ? 'Poor' : 'Hazardous';
+    const aqi = statGas.avg < 200 ? L.good : statGas.avg < 400 ? L.moderate : statGas.avg < 600 ? L.poor : L.hazardous;
     const dryness = Math.round(100 - statSoil.current);
     const calcPanels = [
-      { label: 'Temperature', unit: '°C', current: statTemp.current.toFixed(1), avg: statTemp.avg.toFixed(1), min: statTemp.min.toFixed(1), max: statTemp.max.toFixed(1), extraLabel: 'Range', extraValue: `${(statTemp.max - statTemp.min).toFixed(1)}°C` },
-      { label: 'Humidity', unit: '%', current: Math.round(statHum.current), avg: Math.round(statHum.avg), min: Math.round(statHum.min), max: Math.round(statHum.max), extraLabel: 'Peak', extraValue: `${Math.round(statHum.max)}%` },
-      { label: 'Gas Level', unit: 'ppm', current: Math.round(statGas.current), avg: Math.round(statGas.avg), min: Math.round(statGas.min), max: Math.round(statGas.max), extraLabel: 'Air Quality', extraValue: aqi },
-      { label: 'Soil Moisture', unit: '%', current: Math.round(statSoil.current), avg: Math.round(statSoil.avg), min: Math.round(statSoil.min), max: Math.round(statSoil.max), extraLabel: 'Dryness', extraValue: `${dryness}%` },
-      { label: 'Rain Intensity', unit: '%', current: Math.round(statRain.current), avg: Math.round(statRain.avg), min: Math.round(statRain.min), max: Math.round(statRain.max), extraLabel: 'Daily Avg', extraValue: `${Math.round(statRain.avg)}%` },
-      { label: 'Distance', unit: 'cm', current: Math.round(statDist.current), avg: Math.round(statDist.avg), min: Math.round(statDist.min), max: Math.round(statDist.max), extraLabel: 'Range', extraValue: `${Math.round(statDist.max - statDist.min)}cm` }
+      { label: L.calcTemperature, unit: '°C', current: statTemp.current.toFixed(1), avg: statTemp.avg.toFixed(1), min: statTemp.min.toFixed(1), max: statTemp.max.toFixed(1), extraLabel: L.extraRange, extraValue: `${(statTemp.max - statTemp.min).toFixed(1)}°C` },
+      { label: L.calcHumidity, unit: '%', current: Math.round(statHum.current), avg: Math.round(statHum.avg), min: Math.round(statHum.min), max: Math.round(statHum.max), extraLabel: L.extraPeak, extraValue: `${Math.round(statHum.max)}%` },
+      { label: L.calcGasLevel, unit: 'ppm', current: Math.round(statGas.current), avg: Math.round(statGas.avg), min: Math.round(statGas.min), max: Math.round(statGas.max), extraLabel: L.extraAirQuality, extraValue: aqi },
+      { label: L.calcSoilMoisture, unit: '%', current: Math.round(statSoil.current), avg: Math.round(statSoil.avg), min: Math.round(statSoil.min), max: Math.round(statSoil.max), extraLabel: L.extraDryness, extraValue: `${dryness}%` },
+      { label: L.calcRainIntensity, unit: '%', current: Math.round(statRain.current), avg: Math.round(statRain.avg), min: Math.round(statRain.min), max: Math.round(statRain.max), extraLabel: L.extraDailyAvg, extraValue: `${Math.round(statRain.avg)}%` },
+      { label: L.calcDistance, unit: 'cm', current: Math.round(statDist.current), avg: Math.round(statDist.avg), min: Math.round(statDist.min), max: Math.round(statDist.max), extraLabel: L.extraRange, extraValue: `${Math.round(statDist.max - statDist.min)}cm` }
     ];
 
     const insights = [
-      { color: tSoil.dir === 'down' ? AMBER : GREEN, text: tSoil.dir === 'down' ? 'Soil moisture is decreasing' : tSoil.dir === 'up' ? 'Soil moisture is recovering' : 'Soil moisture is stable' },
-      { color: tRain.dir === 'up' ? AMBER : BLUE, text: tRain.dir === 'up' ? 'Rain intensity increasing' : tRain.dir === 'down' ? 'Rain intensity decreasing' : 'Rain intensity steady' },
-      { color: tTemp.dir === 'flat' ? GREEN : AMBER, text: tTemp.dir === 'flat' ? 'Temperature stable' : `Temperature trending ${tTemp.dir}` },
-      { color: statGas.avg > 400 ? AMBER : GREEN, text: statGas.avg > 400 ? 'Gas level elevated — monitor closely' : 'Gas level normal' },
-      { color: BLUE, text: `Motion detected ${s.displayed.motionToday} times today` },
-      { color: s.displayed.healthScore > 85 ? GREEN : s.displayed.healthScore > 60 ? AMBER : RED, text: `Device health ${s.displayed.healthScore > 85 ? 'excellent' : s.displayed.healthScore > 60 ? 'fair' : 'degraded'} (${s.displayed.healthScore}/100)` }
+      { color: tSoil.dir === 'down' ? AMBER : GREEN, text: tSoil.dir === 'down' ? L.insightSoilDown : tSoil.dir === 'up' ? L.insightSoilUp : L.insightSoilFlat },
+      { color: tRain.dir === 'up' ? AMBER : BLUE, text: tRain.dir === 'up' ? L.insightRainUp : tRain.dir === 'down' ? L.insightRainDown : L.insightRainFlat },
+      { color: tTemp.dir === 'flat' ? GREEN : AMBER, text: tTemp.dir === 'flat' ? L.insightTempFlat : L.insightTempTrend.replace('{dir}', tTemp.dir === 'up' ? L.trendUp : L.trendDown) },
+      { color: statGas.avg > 400 ? AMBER : GREEN, text: statGas.avg > 400 ? L.insightGasHigh : L.insightGasNormal },
+      { color: BLUE, text: L.insightMotion.replace('{n}', s.displayed.motionToday) },
+      { color: s.displayed.healthScore > 85 ? GREEN : s.displayed.healthScore > 60 ? AMBER : RED, text: L.insightHealth.replace('{word}', s.displayed.healthScore > 85 ? L.healthExcellent : s.displayed.healthScore > 60 ? L.healthFair : L.healthDegraded).replace('{score}', s.displayed.healthScore) }
     ];
 
     const wifiQualityPct = Math.round(clamp(((s.wifiRSSI + 90) / 55) * 100, 0, 100));
     const resourceGauges = [
-      { label: 'CPU Usage', value: `${s.cpu}%`, percent: s.cpu, color: cpuColor },
-      { label: 'Heap Memory', value: `${heapPercent}%`, percent: heapPercent, color: heapColor },
-      { label: 'Wi-Fi Signal', value: `${wifiQualityPct}%`, percent: wifiQualityPct, color: wifiRSSIColor }
+      { label: L.resourceCpuUsage, value: `${s.cpu}%`, percent: s.cpu, color: cpuColor },
+      { label: L.resourceHeapMemory, value: `${heapPercent}%`, percent: heapPercent, color: heapColor },
+      { label: L.resourceWifiSignal, value: `${wifiQualityPct}%`, percent: wifiQualityPct, color: wifiRSSIColor }
     ];
 
+    // ---- Per-sensor detail page (opened via navigate('sensor', id), i.e.
+    // clicking any sensor card / the gas card / the wifi card) ----
+    let sensorDetailVM = null;
+    if (s.selectedSensor) {
+      const id = s.selectedSensor;
+      const valueMap = {
+        flame: { icon: '🔥', label: L.sensorFlame, color: flameColor, valueText: s.flame === 'fire' ? L.fireDetected : L.safe },
+        pir: { icon: '🚶', label: L.sensorPir, color: pirColor, valueText: s.pir === 'motion' ? L.motion : L.noMotion },
+        vibration: { icon: '📳', label: L.sensorVibration, color: vibColor, valueText: s.vibration === 'triggered' ? L.triggeredStatus : L.stableStatus },
+        rain: { icon: '🌧', label: L.sensorRain, color: rainColor, valueText: `${Math.round(s.rain)}%` },
+        soil: { icon: '🌱', label: L.sensorSoil, color: soilColor, valueText: `${Math.round(s.soil)}%` },
+        distance: { icon: '📏', label: L.sensorDistance, color: distColor, valueText: `${Math.round(s.distance)} cm` },
+        temperature: { icon: '🌡', label: L.sensorTemperature, color: tempColor, valueText: `${s.temperature.toFixed(1)}°C` },
+        humidity: { icon: '💧', label: L.sensorHumidity, color: humColor, valueText: `${Math.round(s.humidity)}%` },
+        gas: { icon: '💨', label: L.mq2GasSensor, color: gasLevelColor, valueText: `${s.gasLevel} ppm` },
+        wifi: { icon: '📶', label: L.wifiSignalRSSI, color: wifiRSSIColor, valueText: `${s.wifiRSSI} dBm` }
+      };
+      const v = valueMap[id];
+      const info = SI[id] || SI.flame;
+      if (v) {
+        sensorDetailVM = {
+          icon: v.icon, label: v.label, valueText: v.valueText, color: v.color, glow: rgba(v.color, 0.22),
+          howItWorks: info.howItWorks,
+          specs: info.specs.map(([label, value]) => ({ label, value }))
+        };
+      }
+    }
+
     return {
+      i18n: L,
       sidebarItems,
-      viewTitle: viewTitles[view],
+      viewTitle: viewTitles[view] || L.viewTitleDashboard,
+      tagline: L.tagline, adminLabel: L.adminLabel, operatorLabel: L.operatorLabel,
       isDashboard: view === 'dashboard', isLive: view === 'live', isAnalytics: view === 'analytics',
       isAlerts: view === 'alerts', isHealth: view === 'health', isSettings: view === 'settings',
+      isSensorDetail: view === 'sensorDetail', sensorDetailVM,
+      backToDashboard: () => this.navigate('view', 'dashboard'),
       firmware: s.firmware,
       clockTime: s.now.toLocaleTimeString('en-US', { hour12: false }),
       clockDate: s.now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      wifiColor: s.controllerStatus === 'online' ? GREEN : RED, wifiLabel: s.controllerStatus === 'online' ? 'Wi-Fi Connected' : 'Wi-Fi Unreachable',
-      espColor: s.controllerStatus === 'online' ? GREEN : RED, espLabel: s.controllerStatus === 'online' ? 'ESP32 Connected' : 'ESP32 Offline',
+      wifiColor: s.controllerStatus === 'online' ? GREEN : RED, wifiLabel: s.controllerStatus === 'online' ? L.wifiConnected : L.wifiUnreachable,
+      espColor: s.controllerStatus === 'online' ? GREEN : RED, espLabel: s.controllerStatus === 'online' ? L.espConnected : L.espOffline,
       notifCount, notifOpen: s.notifOpen,
       toggleNotif: () => this.setState(st => ({ notifOpen: !st.notifOpen, notifRead: st.alerts.length })),
       notifPreview: alerts.slice(0, 4),
-      threeCanvasRef: this.threeCanvasRef,
+      threeCanvasRef: this.threeCanvasRef, sparkCanvasRef: this.sparkCanvasRef,
       sensorCards,
-      gasBorderColor: rgba(gasLevelColor, 0.35), gasLevelColor, gasLevel: s.gasLevel, gasQuality: s.gasQuality, gasQualityColor, smokeColor, smokeLabel: s.smoke ? 'Detected' : 'Clear',
+      gasBorderColor: rgba(gasLevelColor, 0.35), gasLevelColor, gasLevel: s.gasLevel, gasQuality: s.gasQuality, gasQualityColor, smokeColor, smokeLabel: s.smoke ? L.detected : L.clear,
+      openGasDetail: () => this.navigate('sensor', 'gas'), openWifiDetail: () => this.navigate('sensor', 'wifi'),
       wifiRSSIColor, wifiRSSI: s.wifiRSSI, wifiBarsList,
-      deviceOnlineColor: s.controllerStatus === 'online' ? GREEN : RED, deviceOnlineLabel: s.controllerStatus === 'online' ? 'ESP32 Online' : `ESP32 Offline (last seen ${s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : 'never'})`, deviceFields,
-      goAlerts: () => this.setState({ activeView: 'alerts' }),
+      deviceOnlineColor: s.controllerStatus === 'online' ? GREEN : RED,
+      deviceOnlineLabel: s.controllerStatus === 'online' ? L.deviceOnline : L.deviceOfflineSince.replace('{time}', s.lastSeenTs ? this.timeAgo(s.lastSeenTs) : L.never),
+      deviceFields,
+      goAlerts: () => this.navigate('view', 'alerts'),
       alertPreview: alerts.slice(0, 4),
       alerts, criticalCount, warningCount, infoCount,
       cpu: s.cpu, cpuColor, heapKB: s.heapKB, heapPercent, heapColor,
       settingsToggles, refreshInterval: s.refreshInterval,
       setRefreshInterval: (e) => this.setState({ refreshInterval: Number(e.target.value) }),
+      updatingEveryLabel: L.updatingEverySeconds.replace('{n}', s.refreshInterval),
       filterOptions, summaryCards, calcPanels, insights, resourceGauges,
-      exportCSV: () => this.exportCSV(), exportPNG: () => this.exportPNG(), exportPDF: () => this.exportPDF()
+      exportCSV: () => this.exportCSV(), exportPNG: () => this.exportPNG(), exportPDF: () => this.exportPDF(),
+
+      // ---- theme / language / mobile nav ----
+      themeClass: s.theme === 'light' ? 'theme-light' : '',
+      isDarkTheme: s.theme === 'dark', isLightTheme: s.theme === 'light',
+      toggleTheme: () => this.toggleTheme(),
+      themeToggleTitle: s.theme === 'dark' ? L.switchToLight : L.switchToDark,
+      langShort: s.lang === 'en' ? 'EN' : 'TA',
+      langToggleTitle: L.switchLanguage,
+      toggleLang: () => this.toggleLang(),
+      mobileNavClass: s.mobileNavOpen ? 'nav-open' : '',
+      toggleMobileNav: () => this.toggleMobileNav(),
+      closeMobileNav: () => this.closeMobileNav()
     };
   }
 
